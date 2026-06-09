@@ -32,71 +32,53 @@ Remotes:WaitForChild("CoinsUpdated").OnClientEvent:Connect(function(amount)
 end)
 
 -- ══ ОТКРЫТЬ МАГАЗИН ══
-local function openShop()
+local function rebuildRodGrid()
     if not ShopGui then return end
-
-    -- Получить данные удочек с сервера
-    local rodsData = GetRods:InvokeServer()
-    if rodsData then
-        ownedRods   = rodsData.owned   or {}
-        equippedRod = rodsData.equipped or "WoodenRod"
-    end
-
-    -- Обновить UI карточек удочек
     local grid = ShopGui:FindFirstChild("RodGrid", true)
-    if not grid then
-        ShopGui.Enabled = true
-        return
-    end
+    if not grid then return end
 
-    -- Очистить старые карточки
     for _, child in ipairs(grid:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
 
-    -- Создать карточки для каждой удочки
     for _, rodId in ipairs(RodData.ShopOrder) do
         local rod = RodData:GetRod(rodId)
         if not rod then continue end
 
-        -- PLACEHOLDER: создать UI карточку программно
-        -- В финале это будет Template-фрейм с клонированием
         local card = Instance.new("Frame")
         card.Name = rodId
         card.Size = UDim2.new(0.48, 0, 0, 120)
+        card.BackgroundColor3 = Color3.fromRGB(12, 20, 36)
+        card.BorderSizePixel = 0
         card.Parent = grid
 
-        -- Фон карточки
-        -- card.BackgroundColor3 = ...
-        -- PLACEHOLDER: card.Image = rod.icon (rbxassetid://...)
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 8)
+        corner.Parent = card
 
-        -- Название
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Name = "RodName"
         nameLabel.Text = rod.displayName
         nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
-        nameLabel.Position = UDim2.new(0, 0, 0, 0)
         nameLabel.BackgroundTransparency = 1
         nameLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextScaled = true
         nameLabel.Parent = card
 
-        -- Бонус
         local bonusLabel = Instance.new("TextLabel")
         bonusLabel.Name = "RodBonus"
-        bonusLabel.Text = rod.description
-        bonusLabel.Size = UDim2.new(1, 0, 0.35, 0)
-        bonusLabel.Position = UDim2.new(0, 0, 0.25, 0)
+        bonusLabel.Text = rod.description or ""
+        bonusLabel.Size = UDim2.new(1, -8, 0.35, 0)
+        bonusLabel.Position = UDim2.new(0, 4, 0.25, 0)
         bonusLabel.BackgroundTransparency = 1
-        bonusLabel.TextColor3 = Color3.fromRGB(180, 230, 200)
+        bonusLabel.TextColor3 = Color3.fromRGB(160, 210, 185)
         bonusLabel.Font = Enum.Font.Gotham
         bonusLabel.TextScaled = true
+        bonusLabel.TextWrapped = true
         bonusLabel.Parent = card
 
-        -- Цена / Кнопка
-        local isOwned    = false
-        local isEquipped = (equippedRod == rodId)
+        local isOwned = (rod.price == 0)
         for _, owned in ipairs(ownedRods) do
             if owned == rodId then isOwned = true; break end
         end
@@ -107,44 +89,56 @@ local function openShop()
         actionButton.Position = UDim2.new(0.1, 0, 0.65, 0)
         actionButton.Font = Enum.Font.GothamBold
         actionButton.TextScaled = true
+        actionButton.BorderSizePixel = 0
         actionButton.Parent = card
+        local abCorner = Instance.new("UICorner")
+        abCorner.CornerRadius = UDim.new(0, 6)
+        abCorner.Parent = actionButton
 
-        if isOwned or rod.price == 0 then
-            -- Уже куплена — экипировка через хотбар инвентаря (1-5)
+        if isOwned then
             actionButton.Text = "✓ Куплено"
             actionButton.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
             actionButton.TextColor3 = Color3.new(1,1,1)
             actionButton.Active = false
         else
-            actionButton.Text = "🪙 " .. tostring(rod.price)
-            actionButton.BackgroundColor3 = Color3.fromRGB(200, 120, 0)
+            local canAfford = (playerCoins >= rod.price)
+            actionButton.Text = (canAfford and "🪙 " or "🔒 ") .. tostring(rod.price)
+            actionButton.BackgroundColor3 = canAfford
+                and Color3.fromRGB(200, 120, 0)
+                or  Color3.fromRGB(70, 70, 70)
             actionButton.TextColor3 = Color3.new(1,1,1)
-            -- Проверить достаточно ли монет
-            if playerCoins < rod.price then
-                actionButton.BackgroundColor3 = Color3.fromRGB(80,80,80)
-                actionButton.Text = "🔒 " .. tostring(rod.price)
-            end
             actionButton.MouseButton1Click:Connect(function()
                 BuyRod:FireServer(rodId)
             end)
         end
     end
+end
 
-    ShopGui.Enabled = true
+local function openShop()
+    if not ShopGui then return end
     isShopOpen = true
+    ShopGui.Enabled = true
 
-    -- Анимация появления
-    if ShopGui:IsA("ScreenGui") then
-        local frame = ShopGui:FindFirstChildOfClass("Frame")
-        if frame then
-            frame.Position = UDim2.new(0.5, 0, 1.5, 0)
-            TweenService:Create(
-                frame,
-                TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-                { Position = UDim2.new(0.5, 0, 0.5, 0) }
-            ):Play()
-        end
+    -- Анимация появления — сразу
+    local frame = ShopGui:FindFirstChildOfClass("Frame")
+    if frame then
+        frame.Position = UDim2.new(0.5, 0, 1.5, 0)
+        TweenService:Create(
+            frame,
+            TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            { Position = UDim2.new(0.5, 0, 0.5, 0) }
+        ):Play()
     end
+
+    -- Загрузить данные удочек асинхронно, не блокируя открытие
+    task.spawn(function()
+        local ok, rodsData = pcall(function() return GetRods:InvokeServer() end)
+        if ok and rodsData and isShopOpen then
+            ownedRods   = rodsData.owned   or {}
+            equippedRod = rodsData.equipped or "WoodenRod"
+            rebuildRodGrid()
+        end
+    end)
 end
 
 -- ══ ЗАКРЫТЬ МАГАЗИН ══
@@ -170,8 +164,7 @@ end
 RodPurchased.OnClientEvent:Connect(function(result)
     if result.success then
         table.insert(ownedRods, result.rodId)
-        -- Обновить UI магазина
-        if isShopOpen then openShop() end
+        if isShopOpen then rebuildRodGrid() end
     else
         -- Показать ошибку
         if result.reason == "not_enough_coins" then
@@ -184,7 +177,7 @@ end)
 -- ══ НАДЕЛИ УДОЧКУ ══
 RodEquipped.OnClientEvent:Connect(function(rodId)
     equippedRod = rodId
-    if isShopOpen then openShop() end
+    if isShopOpen then rebuildRodGrid() end
 end)
 
 -- ══ ВЗАИМОДЕЙСТВИЕ С NPC ══

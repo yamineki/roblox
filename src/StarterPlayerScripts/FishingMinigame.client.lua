@@ -18,6 +18,7 @@ local PlayerGui  = Player.PlayerGui
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local StartFishing = Remotes:WaitForChild("StartFishing")
+local RequestFishing = Remotes:WaitForChild("RequestFishing")
 local HookResultEvent = Remotes:WaitForChild("HookResult")
 local CatchResultEvent = Remotes:WaitForChild("CatchResult")
 local FishCaughtEvent  = Remotes:WaitForChild("FishCaught")
@@ -88,17 +89,21 @@ local finishCatch
 -- ══ ФАЗА 1: ПОДСЕЧКА ══
 function startHookPhase()
     currentPhase = "hook"
-    arrowAngle = 0
-    hookResult = "good"
+    arrowAngle   = 0
+    hookResult   = "good"
 
-    setGuiVisible("HookPhase", true)
+    setGuiVisible("HookPhase",  true)
     setGuiVisible("CatchPhase", false)
-    setGuiVisible("ResultPhase", false)
+    setGuiVisible("ResultPhase",false)
 
-    -- Подсказка игроку
     if hookGui then
         local label = hookGui:FindFirstChild("HintLabel")
         if label then label.Text = Strings.Hook_Press end
+        -- Сбросить позицию индикатора
+        local indicator = hookGui:FindFirstChild("SliderIndicator")
+        if indicator then
+            indicator.Position = UDim2.new(0.5, -15, 0, 0)
+        end
     end
 
     playSound("onHover")
@@ -107,8 +112,19 @@ end
 function updateHookPhase(dt)
     arrowAngle = (arrowAngle + hookArrowSpeed * dt) % 360
 
-    -- Обновить визуал стрелки
+    -- Индикатор движется по горизонтали (сinус → -1..1 → позиция по бару)
+    -- Переводим угол в позицию по горизонтальному бару
+    local t = (math.sin(math.rad(arrowAngle)) + 1) / 2  -- 0..1
+
     if hookGui then
+        -- Новый горизонтальный слайдер
+        local indicator = hookGui:FindFirstChild("SliderIndicator")
+        local sliderBG  = hookGui:FindFirstChild("SliderBG")
+        if indicator and sliderBG then
+            local barW = sliderBG.AbsoluteSize.X
+            indicator.Position = UDim2.new(t, -15, 0, 0)
+        end
+        -- Старый вращающийся Arrow (если ещё в GUI)
         local arrow = hookGui:FindFirstChild("Arrow")
         if arrow then
             arrow.Rotation = arrowAngle
@@ -282,23 +298,31 @@ function updateCatchPhase(dt)
 
     -- Обновить UI
     if catchGui then
-        local progressBar = catchGui:FindFirstChild("ProgressBar")
-        local fishIndicator = catchGui:FindFirstChild("FishIndicator")
-        local greenZoneFrame = catchGui:FindFirstChild("GreenZone")
+        local scaleFrame    = catchGui:FindFirstChild("ScaleFrame")
+        local progressBar   = catchGui:FindFirstChild("ProgressBar")
+        local fishIndicator = scaleFrame and scaleFrame:FindFirstChild("FishIndicator")
+        local greenZoneFrame= scaleFrame and scaleFrame:FindFirstChild("GreenZone")
 
         if progressBar then
             local fill = progressBar:FindFirstChild("Fill")
             if fill then
-                fill.Size = UDim2.new(catchProgress / 100, 0, 1, 0)
+                local pct = math.clamp(catchProgress / GameConfig.Fishing.MaxProgress, 0, 1)
+                fill.Size     = UDim2.new(1, 0, pct, 0)
+                fill.Position = UDim2.new(0, 0, 1 - pct, 0)
             end
         end
 
-        -- Позиционирование (UDim2 относительно шкалы)
+        -- Позиционирование относительно ScaleFrame (400px высота)
+        local scaleH = GameConfig.Fishing.ScaleHeight
         if fishIndicator then
-            fishIndicator.Position = UDim2.new(0.5, 0, 1 - fishPos / GameConfig.Fishing.ScaleHeight, 0)
+            -- fishPos = 0 (низ) .. scaleH (верх); AnchorPoint=(0,0)
+            local yScale = 1 - (fishPos + 15) / scaleH  -- +15 = половина высоты индикатора
+            fishIndicator.Position = UDim2.new(-1, 0, math.clamp(yScale, 0, 1), 0)
         end
         if greenZoneFrame then
-            greenZoneFrame.Position = UDim2.new(0, 0, 1 - greenZonePos / GameConfig.Fishing.ScaleHeight, 0)
+            local halfZone = GameConfig.GreenZone.Height / 2
+            local yScale = 1 - (greenZonePos + halfZone) / scaleH
+            greenZoneFrame.Position = UDim2.new(0, 0, math.clamp(yScale, 0, 1), 0)
         end
 
         -- Stress предупреждение
@@ -490,5 +514,11 @@ RunService.RenderStepped:Connect(function(dt)
     end
 end)
 
--- Заброс удочки происходит через ProximityPrompt у воды (FishingSpotSetup на сервере).
--- Сервер проверяет удочку и шлёт StartFishing → beginFishing() выше.
+-- ══ F КЛАВИША — НАЧАТЬ РЫБАЛКУ ══
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if isMinigameActive then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        RequestFishing:FireServer()
+    end
+end)

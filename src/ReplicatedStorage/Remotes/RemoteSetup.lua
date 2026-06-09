@@ -30,6 +30,7 @@ end
 
 -- ══ РЫБАЛКА ══
 makeEvent("StartFishing")          -- Client → Server: игрок нажал рыбачить
+makeEvent("RequestFishing")        -- Client → Server: запросить начало рыбалки
 makeEvent("HookResult")            -- Client → Server: результат подсечки (perfect/good/miss)
 makeEvent("CatchResult")           -- Client → Server: результат мини-игры (caught/escaped)
 makeEvent("FishCaught")            -- Server → Client: подтверждение поимки с данными рыбы

@@ -125,63 +125,39 @@ if not zonesFolder then
     zonesFolder.Parent = workspace
 end
 
-local zoneData = {
-    { id = "SunnyReef",   pos = CFrame.new(0, 0, 0),   color = Color3.fromRGB(0, 200, 255)  },
-    { id = "CoralTrench", pos = CFrame.new(0, -20, 0),  color = Color3.fromRGB(0, 180, 150)  },
-    { id = "OpenOcean",   pos = CFrame.new(0, -50, 0),  color = Color3.fromRGB(50, 100, 200) },
-    { id = "DarkWaters",  pos = CFrame.new(0, -100, 0), color = Color3.fromRGB(80, 30, 150)  },
-    { id = "Abyss",       pos = CFrame.new(0, -200, 0), color = Color3.fromRGB(50, 5, 80)    },
+-- Зоны теперь создаются WorldSetup (FishingSpotSetup.server.lua).
+-- Здесь только Zone Keeper NPC рядом с каждой зоной.
+local zoneKeeperData = {
+    { id = "SunnyReef",   pos = CFrame.new(90,  3,  100), color = Color3.fromRGB(0, 200, 255)  },
+    { id = "CoralTrench", pos = CFrame.new(90,  3,  360), color = Color3.fromRGB(0, 180, 150)  },
+    { id = "OpenOcean",   pos = CFrame.new(110, 3,  640), color = Color3.fromRGB(50, 100, 200) },
+    { id = "DarkWaters",  pos = CFrame.new(130, 3,  960), color = Color3.fromRGB(80, 30, 150)  },
+    { id = "Abyss",       pos = CFrame.new(160, 3, 1320), color = Color3.fromRGB(50, 5, 80)    },
 }
 
-for _, z in ipairs(zoneData) do
-    local zonePart = Instance.new("Part")
-    zonePart.Name        = z.id .. "_Zone"
-    zonePart.Size        = Vector3.new(30, 2, 30)
-    zonePart.CFrame      = z.pos
-    zonePart.Anchored    = true
-    zonePart.Transparency= 0.7
-    zonePart.BrickColor  = BrickColor.new(z.color)
-    zonePart.CanCollide  = false
-    zonePart.Parent      = zonesFolder
-
-    -- PLACEHOLDER: написать текст зоны над Part
-    local label = Instance.new("BillboardGui")
-    label.Size = UDim2.new(0, 200, 0, 30)
-    label.StudsOffset = Vector3.new(0, 2, 0)
-    label.AlwaysOnTop = false
-    label.Parent = zonePart
-
-    local txt = Instance.new("TextLabel")
-    txt.Size = UDim2.new(1,0,1,0)
-    txt.BackgroundTransparency = 1
-    txt.Text = z.id
-    txt.TextColor3 = Color3.new(1,1,1)
-    txt.Font = Enum.Font.GothamBold
-    txt.TextScaled = true
-    txt.Parent = label
-
-    -- ══ ZONE KEEPER (NPC-телепортёр у щели) ══
-    -- PLACEHOLDER: цветной Part, замени на реальную модель смотрителя
+for _, z in ipairs(zoneKeeperData) do
     local keeper = Instance.new("Part")
     keeper.Name       = "ZoneKeeper_" .. z.id
     keeper.Size       = Vector3.new(2, 5, 2)
-    keeper.CFrame     = z.pos * CFrame.new(5, 2.5, 0)  -- рядом со щелью
+    keeper.CFrame     = z.pos
     keeper.Anchored   = true
-    keeper.BrickColor = BrickColor.new(z.color)
+    keeper.Color      = z.color
     keeper.Material   = Enum.Material.Neon
-    keeper.CanCollide = false
+    keeper.CanCollide = true
     keeper.Parent     = zonesFolder
 
     local kbLabel = Instance.new("BillboardGui")
-    kbLabel.Size = UDim2.new(0, 180, 0, 40)
+    kbLabel.Size = UDim2.fromOffset(180, 50)
     kbLabel.StudsOffset = Vector3.new(0, 3.5, 0)
+    kbLabel.AlwaysOnTop = false
     kbLabel.Parent = keeper
+
     local kTxt = Instance.new("TextLabel")
-    kTxt.Size = UDim2.new(1,0,1,0)
+    kTxt.Size = UDim2.fromScale(1, 1)
     kTxt.BackgroundTransparency = 1
-    kTxt.Text = "🌀 Zone Keeper"
+    kTxt.Text = "🌀 Zone Keeper\n" .. z.id
     kTxt.TextColor3 = Color3.new(1,1,1)
-    kTxt.TextStrokeTransparency = 0
+    kTxt.TextStrokeTransparency = 0.2
     kTxt.Font = Enum.Font.GothamBold
     kTxt.TextScaled = true
     kTxt.Parent = kbLabel
@@ -191,7 +167,6 @@ for _, z in ipairs(zoneData) do
     kPrompt.ObjectText      = "Zone Keeper"
     kPrompt.ActionText      = "Путешествовать"
     kPrompt.KeyboardKeyCode = Enum.KeyCode.E
-    kPrompt.GamepadKeyCode  = Enum.KeyCode.ButtonX
     kPrompt.HoldDuration    = 0.2
     kPrompt.MaxActivationDistance = 8
     kPrompt.RequiresLineOfSight   = false
@@ -199,7 +174,6 @@ for _, z in ipairs(zoneData) do
     kPrompt:SetAttribute("PromptKind", "ZoneKeeper")
     kPrompt.Parent          = keeper
 
-    -- При взаимодействии — открыть UI зон у клиента
     kPrompt.Triggered:Connect(function(plr)
         if OpenZoneMenu then
             OpenZoneMenu:FireClient(plr)

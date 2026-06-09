@@ -91,16 +91,22 @@ end
 do
 	local g = scrGui("FishingGui", 130)
 
-	-- Hook Phase
+	-- Hook Phase — горизонтальный слайдер
 	local hp = frame("HookPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 0.5)
 	hp.Visible = false
-	local ci = img("CircleIndicator", hp, UDim2.fromOffset(300,300), UDim2.new(0.5,-150,0.5,-150))
-	ci.BackgroundColor3 = Color3.fromRGB(10,20,40); ci.BackgroundTransparency = 0.3; corner(ci, 150)
-	local arrow = img("Arrow", hp, UDim2.fromOffset(8,130), UDim2.new(0.5,-4,0.5,-130))
-	arrow.AnchorPoint = Vector2.new(0.5,1); arrow.BackgroundColor3 = Color3.fromRGB(0,200,255)
-	arrow.BackgroundTransparency = 0; corner(arrow, 4)
-	frame("GreenZone", hp, UDim2.fromOffset(300,300), UDim2.new(0.5,-150,0.5,-150), Color3.fromRGB(0,200,80), 0.6, 150)
-	lbl("HintLabel", hp, "Нажми [E] для подсечки!", UDim2.fromOffset(400,40), UDim2.new(0.5,-200,0.75,0), Color3.fromRGB(0,220,255), true)
+	-- Фоновый бар слайдера
+	local sliderBG = frame("SliderBG", hp, UDim2.fromOffset(500,50), UDim2.new(0.5,-250,0.5,-25), Color3.fromRGB(20,30,50), 0.2, 8)
+	-- Зелёная зона (центр бара, ширина = HookZoneAngle/360 * 500 ≈ 104px)
+	local gz = frame("GreenZone", sliderBG, UDim2.fromOffset(104,50), UDim2.new(0.5,-52,0,0), Color3.fromRGB(0,200,80), 0.3, 6)
+	-- Perfect зона (центр, уже)
+	frame("PerfectZone", sliderBG, UDim2.fromOffset(26,50), UDim2.new(0.5,-13,0,0), Color3.fromRGB(0,255,130), 0.15, 4)
+	-- Индикатор (прыгает по бару)
+	local si = frame("SliderIndicator", sliderBG, UDim2.fromOffset(30,50), UDim2.new(0.5,-15,0,0), Color3.fromRGB(0,180,255), 0, 6)
+	stroke(si, Color3.fromRGB(0,220,255), 2, 0.1)
+	-- Разделитель в центре
+	frame("CenterLine", sliderBG, UDim2.fromOffset(2,50), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
+	lbl("HintLabel", hp, "Нажми [E] когда курсор в зелёной зоне!", UDim2.fromOffset(480,36), UDim2.new(0.5,-240,0.5,40), Color3.fromRGB(0,220,255), true)
+	lbl("ZoneLabel", hp, "🎣  Заброс", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.5,-100), Color3.fromRGB(200,220,255), true)
 
 	-- Catch Phase
 	local cp = frame("CatchPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 0.5)
