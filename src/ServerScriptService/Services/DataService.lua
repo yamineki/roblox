@@ -11,8 +11,38 @@ local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local DataService = {}
 
 -- DataStore ключи
-local PLAYER_DATA_STORE = DataStoreService:GetDataStore("ReefDiver_PlayerData_v1")
-local HALL_OF_FAME_STORE = DataStoreService:GetDataStore("ReefDiver_HallOfFame_v1")
+-- В Studio без публикации DataStore недоступен — используем in-memory заглушку
+local IS_STUDIO = RunService:IsStudio()
+
+local function makeMockStore()
+    local store = {}
+    local cache = {}
+    function store:GetAsync(key) return cache[key] end
+    function store:SetAsync(key, val) cache[key] = val end
+    function store:UpdateAsync(key, fn)
+        local newVal = fn(cache[key])
+        if newVal ~= nil then cache[key] = newVal end
+        return cache[key]
+    end
+    return store
+end
+
+local PLAYER_DATA_STORE, HALL_OF_FAME_STORE
+do
+    local ok, ds = pcall(function()
+        return DataStoreService:GetDataStore("ReefDiver_PlayerData_v1")
+    end)
+    PLAYER_DATA_STORE = ok and ds or makeMockStore()
+
+    local ok2, hs = pcall(function()
+        return DataStoreService:GetDataStore("ReefDiver_HallOfFame_v1")
+    end)
+    HALL_OF_FAME_STORE = ok2 and hs or makeMockStore()
+
+    if IS_STUDIO and not ok then
+        warn("[DataService] Studio: DataStore недоступен, используется in-memory заглушка")
+    end
+end
 
 -- Кэш данных в памяти (userId → data)
 local playerCache = {}
