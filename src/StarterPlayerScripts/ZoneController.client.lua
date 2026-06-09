@@ -24,71 +24,12 @@ local CoinsUpdated  = Remotes:WaitForChild("CoinsUpdated")
 local playerCoins = 0
 CoinsUpdated.OnClientEvent:Connect(function(amount) playerCoins = amount end)
 
--- ══ ПОСТРОИТЬ GUI ══
-local gui = Instance.new("ScreenGui")
-gui.Name = "ZoneMenu"
-gui.DisplayOrder = 127
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.Enabled = false
-gui.Parent = PlayerGui
-
-local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=o end
-local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1.5; s.Transparency=0.4; s.Parent=o end
-
--- Затемнение фона
-local dim = Instance.new("TextButton")
-dim.Name = "Dim"
-dim.Size = UDim2.fromScale(1,1)
-dim.BackgroundColor3 = Color3.new(0,0,0)
-dim.BackgroundTransparency = 0.5
-dim.Text = ""
-dim.AutoButtonColor = false
-dim.Parent = gui
-
-local panel = Instance.new("Frame")
-panel.Name = "Panel"
-panel.Size = UDim2.fromOffset(560, 480)
-panel.Position = UDim2.new(0.5, 0, 0.5, 0)
-panel.AnchorPoint = Vector2.new(0.5, 0.5)
-panel.BackgroundColor3 = Color3.fromRGB(8, 16, 32)
-panel.BorderSizePixel = 0
-panel.Parent = gui
-corner(panel, 14)
-stroke(panel, Color3.fromRGB(0, 180, 255), 1.5)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 56)
-title.BackgroundTransparency = 1
-title.Text = "🌀 Путешествие по зонам"
-title.TextColor3 = Color3.fromRGB(0, 220, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 22
-title.Parent = panel
-
-local list = Instance.new("Frame")
-list.Name = "List"
-list.Size = UDim2.new(1, -32, 1, -120)
-list.Position = UDim2.fromOffset(16, 60)
-list.BackgroundTransparency = 1
-list.Parent = panel
-
-local layout = Instance.new("UIListLayout")
-layout.Padding = UDim.new(0, 8)
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Parent = list
-
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.fromOffset(200, 40)
-closeBtn.Position = UDim2.new(0.5, 0, 1, -50)
-closeBtn.AnchorPoint = Vector2.new(0.5, 0)
-closeBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
-closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.Text = "✕ Закрыть"
-closeBtn.Parent = panel
-corner(closeBtn, 8)
+-- ══ GUI (создан UIBuilder.lua) ══
+local gui      = PlayerGui:WaitForChild("ZoneMenu", 20)
+local dim      = gui:WaitForChild("Dim")
+local panel    = gui:WaitForChild("Panel")
+local list     = panel:WaitForChild("List")
+local closeBtn = panel:WaitForChild("CloseBtn")
 
 -- Цвета зон
 local ZONE_COLORS = {
@@ -98,6 +39,9 @@ local ZONE_COLORS = {
     DarkWaters  = Color3.fromRGB(120, 40, 200),
     Abyss       = Color3.fromRGB(80, 10, 110),
 }
+
+local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=o end
+local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1.5; s.Transparency=0.4; s.Parent=o end
 
 -- ══ ПОСТРОИТЬ СТРОКИ ЗОН ══
 local function buildRows()
@@ -122,7 +66,6 @@ local function buildRows()
         corner(row, 8)
         stroke(row, ZONE_COLORS[zoneName] or Color3.new(1,1,1), z.current and 2.5 or 1)
 
-        -- Цветная метка зоны слева
         local tag = Instance.new("Frame")
         tag.Size = UDim2.fromOffset(6, 44)
         tag.Position = UDim2.fromOffset(8, 8)
@@ -131,7 +74,6 @@ local function buildRows()
         tag.Parent = row
         corner(tag, 3)
 
-        -- Название + глубина
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Size = UDim2.new(0.5, 0, 0.55, 0)
         nameLabel.Position = UDim2.fromOffset(24, 6)
@@ -154,7 +96,6 @@ local function buildRows()
         depthLabel.TextXAlignment = Enum.TextXAlignment.Left
         depthLabel.Parent = row
 
-        -- Кнопка действия справа
         local actionBtn = Instance.new("TextButton")
         actionBtn.Size = UDim2.fromOffset(150, 40)
         actionBtn.Position = UDim2.new(1, -160, 0.5, -20)
@@ -176,7 +117,6 @@ local function buildRows()
                 gui.Enabled = false
             end)
         else
-            -- Заблокирована — показать условие
             if (status.rebirthLevel or 0) < (z.minRebirth or 0) then
                 actionBtn.Text = "🔒 Rebirth " .. z.minRebirth
                 actionBtn.BackgroundColor3 = Color3.fromRGB(90, 60, 120)
@@ -212,13 +152,10 @@ OpenZoneMenu.OnClientEvent:Connect(openMenu)
 closeBtn.MouseButton1Click:Connect(closeMenu)
 dim.MouseButton1Click:Connect(closeMenu)
 
--- Перестроить после покупки
 ZoneUnlocked.OnClientEvent:Connect(function(payload)
-    if payload.success and gui.Enabled then
-        buildRows()
-    end
+    if payload.success and gui.Enabled then buildRows() end
 end)
-ZoneEntered.OnClientEvent:Connect(function(payload)
+ZoneEntered.OnClientEvent:Connect(function()
     if gui.Enabled then buildRows() end
 end)
 

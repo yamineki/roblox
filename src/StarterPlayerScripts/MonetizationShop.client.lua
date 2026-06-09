@@ -1,6 +1,6 @@
 -- StarterPlayerScripts/MonetizationShop.client.lua
 -- Reef Diver — UI магазина геймпассов и продуктов
--- Открывается кнопкой 💎 в HUD
+-- Открывается кнопкой 💎 в HUD (MonetizationBtn в MainHUD)
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
@@ -12,106 +12,23 @@ local Player    = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-local GetShopData    = Remotes:WaitForChild("GetShopData")
-local PromptGamePass = Remotes:WaitForChild("PromptGamePass")
-local PromptProduct  = Remotes:WaitForChild("PromptProduct")
+local GetShopData       = Remotes:WaitForChild("GetShopData")
+local PromptGamePass    = Remotes:WaitForChild("PromptGamePass")
+local PromptProduct     = Remotes:WaitForChild("PromptProduct")
 local GamePassPurchased = Remotes:WaitForChild("GamePassPurchased")
-local ToggleAutoSell = Remotes:WaitForChild("ToggleAutoSell")
-local GetAutoSellState = Remotes:WaitForChild("GetAutoSellState")
 
 local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=o end
 local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1.5; s.Transparency=0.4; s.Parent=o end
 
--- ══ GUI ══
-local gui = Instance.new("ScreenGui")
-gui.Name = "MonetizationShop"
-gui.DisplayOrder = 129
-gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.Enabled = false
-gui.Parent = PlayerGui
-
-local dim = Instance.new("TextButton")
-dim.Size = UDim2.fromScale(1,1)
-dim.BackgroundColor3 = Color3.new(0,0,0)
-dim.BackgroundTransparency = 0.5
-dim.Text = ""
-dim.AutoButtonColor = false
-dim.Parent = gui
-
-local panel = Instance.new("Frame")
-panel.Name = "Panel"
-panel.Size = UDim2.fromOffset(640, 520)
-panel.Position = UDim2.new(0.5, 0, 0.5, 0)
-panel.AnchorPoint = Vector2.new(0.5, 0.5)
-panel.BackgroundColor3 = Color3.fromRGB(8, 16, 32)
-panel.BorderSizePixel = 0
-panel.Parent = gui
-corner(panel, 14)
-stroke(panel, Color3.fromRGB(255, 200, 60), 1.5)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 50)
-title.BackgroundTransparency = 1
-title.Text = "💎 Магазин"
-title.TextColor3 = Color3.fromRGB(255, 210, 80)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 22
-title.Parent = panel
-
--- Табы: Геймпассы / Продукты
-local tabRow = Instance.new("Frame")
-tabRow.Size = UDim2.new(1, -32, 0, 36)
-tabRow.Position = UDim2.fromOffset(16, 52)
-tabRow.BackgroundTransparency = 1
-tabRow.Parent = panel
-
-local function makeTab(name, text, x)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Size = UDim2.fromOffset(150, 36)
-    btn.Position = UDim2.fromOffset(x, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(20, 32, 52)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
-    btn.Text = text
-    btn.Parent = tabRow
-    corner(btn, 8)
-    return btn
-end
-local tabGamePasses = makeTab("TabGP", "Геймпассы", 0)
-local tabProducts   = makeTab("TabProd", "Монеты и бусты", 158)
-
--- Скролл-контейнер
-local scroll = Instance.new("ScrollingFrame")
-scroll.Name = "Items"
-scroll.Size = UDim2.new(1, -32, 1, -156)
-scroll.Position = UDim2.fromOffset(16, 96)
-scroll.BackgroundTransparency = 1
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 5
-scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 200, 60)
-scroll.CanvasSize = UDim2.new(0,0,0,0)
-scroll.Parent = panel
-
-local grid = Instance.new("UIGridLayout")
-grid.CellSize = UDim2.fromOffset(290, 92)
-grid.CellPadding = UDim2.fromOffset(12, 12)
-grid.SortOrder = Enum.SortOrder.LayoutOrder
-grid.Parent = scroll
-
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.fromOffset(200, 40)
-closeBtn.Position = UDim2.new(0.5, 0, 1, -48)
-closeBtn.AnchorPoint = Vector2.new(0.5, 0)
-closeBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
-closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 16
-closeBtn.Text = "✕ Закрыть"
-closeBtn.Parent = panel
-corner(closeBtn, 8)
+-- ══ GUI (создан UIBuilder.lua) ══
+local gui          = PlayerGui:WaitForChild("MonetizationShop", 20)
+local dim          = gui:WaitForChild("Dim")
+local panel        = gui:WaitForChild("Panel")
+local tabRow       = panel:WaitForChild("TabRow")
+local tabGamePasses= tabRow:WaitForChild("TabGP")
+local tabProducts  = tabRow:WaitForChild("TabProd")
+local scroll       = panel:WaitForChild("Items")
+local closeBtn     = panel:WaitForChild("CloseBtn")
 
 -- ══ СОСТОЯНИЕ ══
 local currentTab = "gamepasses"
@@ -128,7 +45,6 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     corner(card, 10)
     stroke(card, isOwned and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 200, 60), 1)
 
-    -- Иконка (PLACEHOLDER emoji)
     local iconHolder = Instance.new("Frame")
     iconHolder.Size = UDim2.fromOffset(56, 56)
     iconHolder.Position = UDim2.fromOffset(10, 10)
@@ -140,7 +56,7 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     local iconImg = Instance.new("ImageLabel")
     iconImg.Size = UDim2.fromScale(1,1)
     iconImg.BackgroundTransparency = 1
-    iconImg.Image = cfg.icon ~= "" and cfg.icon or ""  -- PLACEHOLDER
+    iconImg.Image = cfg.icon ~= "" and cfg.icon or ""
     iconImg.Parent = iconHolder
     if cfg.icon == "" then
         local ph = Instance.new("TextLabel")
@@ -152,7 +68,6 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
         ph.Parent = iconHolder
     end
 
-    -- Название
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.fromOffset(150, 22)
     nameLabel.Position = UDim2.fromOffset(76, 10)
@@ -165,7 +80,6 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     nameLabel.Parent = card
 
-    -- Описание
     if cfg.description then
         local desc = Instance.new("TextLabel")
         desc.Size = UDim2.fromOffset(204, 30)
@@ -181,7 +95,6 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
         desc.Parent = card
     end
 
-    -- Кнопка покупки
     local buyBtn = Instance.new("TextButton")
     buyBtn.Size = UDim2.fromOffset(200, 24)
     buyBtn.Position = UDim2.fromOffset(76, 62)
@@ -210,8 +123,6 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
             end
         end)
     end
-
-    return card
 end
 
 -- ══ ПОСТРОИТЬ СПИСОК ══
@@ -225,24 +136,19 @@ local function rebuild()
         ownedCache = (shopData and shopData.owned) or {}
         for i, key in ipairs(MonetizationConfig.GamePassOrder) do
             local cfg = MonetizationConfig.GamePasses[key]
-            if cfg then
-                makeCard(cfg, key, ownedCache[key] == true, false, i)
-            end
+            if cfg then makeCard(cfg, key, ownedCache[key] == true, false, i) end
         end
         local rows = math.ceil(#MonetizationConfig.GamePassOrder / 2)
         scroll.CanvasSize = UDim2.fromOffset(0, rows * 104 + 12)
     else
         for i, key in ipairs(MonetizationConfig.ProductOrder) do
             local cfg = MonetizationConfig.Products[key]
-            if cfg then
-                makeCard(cfg, key, false, true, i)
-            end
+            if cfg then makeCard(cfg, key, false, true, i) end
         end
         local rows = math.ceil(#MonetizationConfig.ProductOrder / 2)
         scroll.CanvasSize = UDim2.fromOffset(0, rows * 104 + 12)
     end
 
-    -- Подсветка активного таба
     tabGamePasses.BackgroundColor3 = currentTab == "gamepasses"
         and Color3.fromRGB(255, 200, 60) or Color3.fromRGB(20, 32, 52)
     tabGamePasses.TextColor3 = currentTab == "gamepasses"
@@ -274,30 +180,18 @@ local function close() gui.Enabled = false end
 closeBtn.MouseButton1Click:Connect(close)
 dim.MouseButton1Click:Connect(close)
 
--- Обновить после покупки геймпасса
-GamePassPurchased.OnClientEvent:Connect(function(key)
-    if gui.Enabled and currentTab == "gamepasses" then
-        rebuild()
-    end
+GamePassPurchased.OnClientEvent:Connect(function()
+    if gui.Enabled and currentTab == "gamepasses" then rebuild() end
 end)
 
--- ══ КНОПКА ОТКРЫТИЯ В HUD ══
-local shopBtn = Instance.new("ScreenGui")
-shopBtn.Name = "ShopButton"
-shopBtn.ResetOnSpawn = false
-shopBtn.DisplayOrder = 121
-shopBtn.Parent = PlayerGui
-
-local btn = Instance.new("TextButton")
-btn.Size = UDim2.fromOffset(56, 56)
-btn.Position = UDim2.new(1, -70, 0.5, -28)
-btn.BackgroundColor3 = Color3.fromRGB(255, 190, 50)
-btn.Text = "💎"
-btn.TextScaled = true
-btn.Font = Enum.Font.GothamBold
-btn.Parent = shopBtn
-corner(btn, 14)
-stroke(btn, Color3.fromRGB(255, 230, 150), 2)
-btn.MouseButton1Click:Connect(open)
+-- ══ КНОПКА В MAIN HUD ══
+task.spawn(function()
+    local mainHud = PlayerGui:WaitForChild("MainHUD", 20)
+    if not mainHud then return end
+    local monBtn = mainHud:WaitForChild("MonetizationBtn", 10)
+    if monBtn then
+        monBtn.MouseButton1Click:Connect(open)
+    end
+end)
 
 print("[ReefDiver] MonetizationShop инициализирован ✓")

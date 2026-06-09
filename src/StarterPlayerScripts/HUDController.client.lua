@@ -13,9 +13,9 @@ local Player    = Players.LocalPlayer
 local PlayerGui = Player.PlayerGui
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-local CoinsUpdated    = Remotes:WaitForChild("CoinsUpdated")
-local PlayerDataLoaded= Remotes:WaitForChild("PlayerDataLoaded")
-local RodEquipped     = Remotes:WaitForChild("RodEquipped")
+local CoinsUpdated      = Remotes:WaitForChild("CoinsUpdated")
+local PlayerDataLoaded  = Remotes:WaitForChild("PlayerDataLoaded")
+local RodEquipped       = Remotes:WaitForChild("RodEquipped")
 local WorldEventStarted = Remotes:WaitForChild("WorldEventStarted")
 local WorldEventEnded   = Remotes:WaitForChild("WorldEventEnded")
 local ServerAnnouncement= Remotes:WaitForChild("ServerAnnouncement")
@@ -23,29 +23,28 @@ local ComboUpdate       = Remotes:WaitForChild("ComboUpdate")
 local CollectionComplete= Remotes:WaitForChild("CollectionComplete")
 local ZoneEntered       = Remotes:WaitForChild("ZoneEntered")
 
--- Ожидание GUI
-local MainHUD = PlayerGui:WaitForChild("MainHUD", 15)
-local EventBanner = PlayerGui:WaitForChild("EventBanner", 15)
-local AnnounceBanner = PlayerGui:WaitForChild("AnnounceBanner", 15)
+-- ══ ОЖИДАНИЕ GUI ══
+local MainHUD        = PlayerGui:WaitForChild("MainHUD", 15)
+-- EventBanner и AnnounceBanner — ScreenGui с внутренним Frame "Banner"
+local EventBannerGui = PlayerGui:WaitForChild("EventBanner", 15)
+local EventBanner    = EventBannerGui and EventBannerGui:WaitForChild("Banner", 10)
+local AnnounceGui    = PlayerGui:WaitForChild("AnnounceBanner", 15)
+local AnnounceBanner = AnnounceGui and AnnounceGui:WaitForChild("Banner", 10)
 
--- Элементы HUD
+-- ══ ЭЛЕМЕНТЫ HUD ══
 local coinLabel, zoneLabel, depthLabel, rodLabel
 
 if MainHUD then
-    local bottomLeft = MainHUD:FindFirstChild("BottomLeft")
-    local topLeft    = MainHUD:FindFirstChild("TopLeft")
-    local bottomRight= MainHUD:FindFirstChild("BottomRight")
+    local bottomLeft  = MainHUD:FindFirstChild("BottomLeft")
+    local topLeft     = MainHUD:FindFirstChild("TopLeft")
+    local bottomRight = MainHUD:FindFirstChild("BottomRight")
 
-    if bottomLeft then
-        coinLabel = bottomLeft:FindFirstChild("CoinsLabel")
-    end
-    if topLeft then
+    if bottomLeft  then coinLabel  = bottomLeft:FindFirstChild("CoinsLabel") end
+    if topLeft     then
         zoneLabel  = topLeft:FindFirstChild("ZoneLabel")
         depthLabel = topLeft:FindFirstChild("DepthLabel")
     end
-    if bottomRight then
-        rodLabel = bottomRight:FindFirstChild("RodLabel")
-    end
+    if bottomRight then rodLabel = bottomRight:FindFirstChild("RodLabel") end
 end
 
 -- ══ ОБНОВИТЬ МОНЕТЫ ══
@@ -76,16 +75,15 @@ local function updateRod(rodId)
     local rod = RodData:GetRod(rodId)
     if rod and rodLabel then
         rodLabel.Text = rod.displayName
-        -- PLACEHOLDER: rodIcon.Image = rod.icon
     end
 end
 
--- ══ СОБЫТИЯ ══
+-- ══ СОБЫТИЯ МИРА ══
 WorldEventStarted.OnClientEvent:Connect(function(data)
     if not EventBanner then return end
     EventBanner.Visible = true
 
-    local nameLabel = EventBanner:FindFirstChild("EventName")
+    local nameLabel  = EventBanner:FindFirstChild("EventName")
     local timerLabel = EventBanner:FindFirstChild("EventTimer")
 
     local eventStrKey = "Event_" .. data.eventName
@@ -93,15 +91,13 @@ WorldEventStarted.OnClientEvent:Connect(function(data)
         nameLabel.Text = Strings[eventStrKey] or data.eventName
     end
 
-    -- Анимация появления
-    if EventBanner:IsA("Frame") then
-        EventBanner.Position = UDim2.new(0.5, 0, -0.1, 0)
-        TweenService:Create(
-            EventBanner,
-            TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-            { Position = UDim2.new(0.5, 0, 0.05, 0) }
-        ):Play()
-    end
+    -- Анимация появления (EventBanner — Frame, Position работает)
+    EventBanner.Position = UDim2.new(0.5, -250, -0.15, 0)
+    TweenService:Create(
+        EventBanner,
+        TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        { Position = UDim2.new(0.5, -250, 0.02, 0) }
+    ):Play()
 
     -- Таймер обратного отсчёта
     local remaining = data.durationSecs
@@ -126,7 +122,7 @@ WorldEventEnded.OnClientEvent:Connect(function()
     TweenService:Create(
         EventBanner,
         TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        { Position = UDim2.new(0.5, 0, -0.15, 0) }
+        { Position = UDim2.new(0.5, -250, -0.15, 0) }
     ):Play()
     task.delay(0.5, function()
         EventBanner.Visible = false
@@ -141,9 +137,7 @@ ServerAnnouncement.OnClientEvent:Connect(function(payload)
     local fishImg  = AnnounceBanner:FindFirstChild("FishImage")
 
     if msgLabel then msgLabel.Text = payload.message end
-    if fishImg  then
-        fishImg.Image = payload.fishImage or ""  -- PLACEHOLDER
-    end
+    if fishImg  then fishImg.Image = payload.fishImage or "" end
 
     AnnounceBanner.Visible = true
     AnnounceBanner.BackgroundTransparency = 1
@@ -154,7 +148,6 @@ ServerAnnouncement.OnClientEvent:Connect(function(payload)
         { BackgroundTransparency = 0.2 }
     ):Play()
 
-    -- Скрыть через 5 секунд
     task.delay(5, function()
         TweenService:Create(
             AnnounceBanner,
@@ -178,7 +171,6 @@ ComboUpdate.OnClientEvent:Connect(function(payload)
     if streak >= 2 then
         label.Text = string.format("🔥 PERFECT ×%d  (×%.1f монет)", streak, payload.mult or 1)
         label.Visible = true
-        -- Пульс
         label.TextTransparency = 0
         TweenService:Create(label,
             TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
@@ -188,7 +180,6 @@ ComboUpdate.OnClientEvent:Connect(function(payload)
                 TweenInfo.new(0.15), { TextSize = 22 }):Play()
         end)
     else
-        -- Серия сброшена
         if label.Visible then
             TweenService:Create(label, TweenInfo.new(0.4),
                 { TextTransparency = 1 }):Play()
@@ -226,7 +217,7 @@ end)
 PlayerDataLoaded.OnClientEvent:Connect(function(data)
     updateCoins(data.coins or 0)
     updateRod(data.equippedRod or "WoodenRod")
-    updateZone("SunnyReef")  -- стартовая зона
+    updateZone("SunnyReef")
 end)
 
 CoinsUpdated.OnClientEvent:Connect(updateCoins)
