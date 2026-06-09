@@ -70,6 +70,14 @@ do
     makeCorner(tl, 8)
     makeLabel("ZoneLabel",  tl, "Sunny Reef", UDim2.new(1,0,0.5,0), UDim2.new(0,0,0,0),   Color3.fromRGB(0,220,255))
     makeLabel("DepthLabel", tl, "0 – 100 м",  UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), Color3.fromRGB(100,180,200))
+
+    local br = makeFrame("BottomRight", gui,
+        UDim2.fromOffset(200, 50),
+        UDim2.new(1, -210, 1, -60),
+        Color3.fromRGB(5,15,30), 0.3)
+    makeCorner(br, 8)
+    makeLabel("RodLabel", br, "🎣 Wooden Rod", UDim2.fromScale(1,1),
+        UDim2.fromScale(0,0), Color3.fromRGB(180,220,255))
 end
 
 -- ══ 2. FISHING GUI (мини-игра) ══
