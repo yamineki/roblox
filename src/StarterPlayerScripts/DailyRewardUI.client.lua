@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
 
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
+local SoundFX    = require(ReplicatedStorage.Modules.SoundFX)
 
 local Player    = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
@@ -172,6 +173,7 @@ end
 
 local function openGui()
     gui.Enabled = true
+    SoundFX.Play("Open")
     panel.Size = UDim2.fromOffset(760, 0)
     panel.BackgroundTransparency = 1
     TweenService:Create(panel,
@@ -217,6 +219,7 @@ end
 
 claimBtn.MouseButton1Click:Connect(function()
     if not currentStatus or not currentStatus.canClaim then return end
+    SoundFX.Play("Click")
     claimBtn.Active = false
     claimBtn.Text = "⏳ Получение..."
     ClaimDailyReward:FireServer()
@@ -269,6 +272,7 @@ DailyRewardClaimed.OnClientEvent:Connect(function(payload)
     end
 
     updateDot(false)
+    SoundFX.Play("Reward")
     showResult(payload.reward)
 end)
 

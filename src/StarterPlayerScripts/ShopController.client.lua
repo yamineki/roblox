@@ -8,6 +8,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RodData = require(ReplicatedStorage.Modules.RodData)
 local Strings = require(ReplicatedStorage.Modules.Strings)
+local SoundFX = require(ReplicatedStorage.Modules.SoundFX)
+local ShopBridge = require(ReplicatedStorage.Modules.ShopBridge)
 
 local Player    = Players.LocalPlayer
 local PlayerGui = Player.PlayerGui
@@ -29,6 +31,10 @@ local isShopOpen = false
 -- Обновить монеты из HUD (слушаем CoinsUpdated)
 Remotes:WaitForChild("CoinsUpdated").OnClientEvent:Connect(function(amount)
     playerCoins = amount
+    if ShopGui then
+        local coinsLbl = ShopGui:FindFirstChild("ShopCoinsLabel", true)
+        if coinsLbl then coinsLbl.Text = "🪙 " .. tostring(playerCoins) end
+    end
 end)
 
 -- ══ ОТКРЫТЬ МАГАЗИН ══
@@ -40,6 +46,9 @@ local function rebuildRodGrid()
     for _, child in ipairs(grid:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
+
+    local coinsLbl = ShopGui:FindFirstChild("ShopCoinsLabel", true)
+    if coinsLbl then coinsLbl.Text = "🪙 " .. tostring(playerCoins) end
 
     for _, rodId in ipairs(RodData.ShopOrder) do
         local rod = RodData:GetRod(rodId)
@@ -113,6 +122,7 @@ local function rebuildRodGrid()
                 or  Color3.fromRGB(50, 52, 60)
             actionButton.TextColor3 = Color3.new(1,1,1)
             actionButton.MouseButton1Click:Connect(function()
+                SoundFX.Play("Click")
                 BuyRod:FireServer(rodId)
             end)
         end
@@ -123,6 +133,7 @@ local function openShop()
     if not ShopGui then return end
     isShopOpen = true
     ShopGui.Enabled = true
+    SoundFX.Play("Open")
 
     -- Анимация появления — сразу
     local frame = ShopGui:FindFirstChildOfClass("Frame")
@@ -150,6 +161,7 @@ end
 local function closeShop()
     if not ShopGui then return end
     isShopOpen = false
+    SoundFX.Play("Close")
 
     local frame = ShopGui:FindFirstChildOfClass("Frame")
     if frame then
@@ -168,6 +180,7 @@ end
 -- ══ ОТВЕТ СЕРВЕРА: ПОКУПКА ══
 RodPurchased.OnClientEvent:Connect(function(result)
     if result.success then
+        SoundFX.Play("Purchase")
         table.insert(ownedRods, result.rodId)
         if isShopOpen then rebuildRodGrid() end
     else
@@ -199,13 +212,9 @@ if prompt then
 end
 ]]
 
--- Открытие магазина по взаимодействию с Rod Master NPC
-local OpenNPC = Remotes:WaitForChild("OpenNPC")
-OpenNPC.OnClientEvent:Connect(function(npcId)
-    if npcId == "RodMaster" then
-        openShop()
-    end
-end)
+-- Открытие магазина теперь происходит через NPCDialog после положительного
+-- выбора в диалоге (см. NPCDialog.client.lua + ShopBridge)
+ShopBridge.OpenRodShop = openShop
 
 -- Временная кнопка для тестирования (можно убрать — NPC уже работают)
 local testButton = PlayerGui:WaitForChild("TestButtons", 5)

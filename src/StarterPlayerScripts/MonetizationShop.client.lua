@@ -7,6 +7,8 @@ local TweenService      = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MonetizationConfig = require(ReplicatedStorage.Modules.MonetizationConfig)
+local SoundFX = require(ReplicatedStorage.Modules.SoundFX)
+local ShopBridge = require(ReplicatedStorage.Modules.ShopBridge)
 
 local Player    = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
@@ -117,6 +119,7 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
         buyBtn.Text = "R$ " .. (cfg.priceRobux or "?")
         buyBtn.BackgroundColor3 = Color3.fromRGB(70, 160, 90)
         buyBtn.MouseButton1Click:Connect(function()
+            SoundFX.Play("Purchase")
             if isProduct then
                 PromptProduct:FireServer(key)
             else
@@ -161,9 +164,11 @@ local function rebuild()
 end
 
 tabGamePasses.MouseButton1Click:Connect(function()
+    SoundFX.Play("Click")
     currentTab = "gamepasses"; rebuild()
 end)
 tabProducts.MouseButton1Click:Connect(function()
+    SoundFX.Play("Click")
     currentTab = "products"; rebuild()
 end)
 
@@ -171,17 +176,22 @@ end)
 local function open()
     rebuild()
     gui.Enabled = true
+    SoundFX.Play("Open")
     panel.Position = UDim2.new(0.5, 0, 0.6, 0)
     TweenService:Create(panel,
         TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
         { Position = UDim2.new(0.5, 0, 0.5, 0) }):Play()
 end
-local function close() gui.Enabled = false end
+local function close()
+    SoundFX.Play("Close")
+    gui.Enabled = false
+end
 
 closeBtn.MouseButton1Click:Connect(close)
 dim.MouseButton1Click:Connect(close)
 
 GamePassPurchased.OnClientEvent:Connect(function()
+    SoundFX.Play("Purchase")
     if gui.Enabled and currentTab == "gamepasses" then rebuild() end
 end)
 
@@ -194,5 +204,7 @@ task.spawn(function()
         monBtn.MouseButton1Click:Connect(open)
     end
 end)
+
+ShopBridge.OpenMonetizationShop = open
 
 print("[ReefDiver] MonetizationShop инициализирован ✓")

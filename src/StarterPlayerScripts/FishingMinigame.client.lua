@@ -12,6 +12,7 @@ local SoundService       = game:GetService("SoundService")
 local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local Strings    = require(ReplicatedStorage.Modules.Strings)
 local FishData   = require(ReplicatedStorage.Modules.FishData)
+local SoundFX    = require(ReplicatedStorage.Modules.SoundFX)
 
 local Player     = Players.LocalPlayer
 local PlayerGui  = Player.PlayerGui
@@ -51,12 +52,16 @@ local catchElapsed     = 0
 -- Hook Phase
 local arrowAngle       = 0      -- градусы
 local hookArrowSpeed   = GameConfig.Fishing.HookArrowBaseSpeed
+local rodShakeTween    = nil
 
--- ══ ЗАГЛУШКИ ЗВУКОВ ══
--- PLACEHOLDER: заменить SoundId на реальные
+-- Catch Phase juice
+local fishInZonePrev   = false
+local lastRippleTime   = 0
+local zoneTintTween    = nil
+
+-- ══ ЗВУКИ ══
 local function playSound(name)
-    -- TODO: SoundService:FindFirstChild(name) и :Play()
-    -- Пример: local snd = SoundService:FindFirstChild("Click"); if snd then snd:Play() end
+    SoundFX.Play(name)
 end
 
 -- ══ UI ЭЛЕМЕНТЫ ══
@@ -107,7 +112,22 @@ function startHookPhase()
         end
     end
 
-    playSound("onHover")
+    -- "Тряска удочки" — лёгкое покачивание HookPhase для ощущения натяжения
+    if rodShakeTween then
+        rodShakeTween:Cancel()
+        rodShakeTween = nil
+    end
+    if hookGui then
+        hookGui.Rotation = -1
+        rodShakeTween = TweenService:Create(
+            hookGui,
+            TweenInfo.new(0.12, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            { Rotation = 1 }
+        )
+        rodShakeTween:Play()
+    end
+
+    playSound("CastRod")
 end
 
 function updateHookPhase(dt)
@@ -143,27 +163,45 @@ function onHookInput()
     local diff = math.abs(t - 0.5) * 360                -- расстояние от центра зоны в ед. HookZoneAngle
     local halfZone = GameConfig.Fishing.HookZoneAngle / 2
 
+    -- Вспышка цвета индикатора по результату подсечки
+    local function flashIndicator(flashColor)
+        if not hookGui then return end
+        local sliderBG  = hookGui:FindFirstChild("SliderBG")
+        local indicator = sliderBG and sliderBG:FindFirstChild("SliderIndicator")
+        if not indicator then return end
+        local original = indicator.BackgroundColor3
+        indicator.BackgroundColor3 = flashColor
+        TweenService:Create(
+            indicator,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { BackgroundColor3 = Color3.fromRGB(235,235,235) }
+        ):Play()
+    end
+
     if diff <= GameConfig.Fishing.HookPerfectWindow then
         hookResult = "perfect"
         if hookGui then
             local lbl = hookGui:FindFirstChild("HintLabel")
             if lbl then lbl.Text = Strings.Hook_Perfect end
         end
-        playSound("onButtonClick")
+        playSound("HookHit")
+        flashIndicator(Color3.fromRGB(90,200,110))
     elseif diff <= halfZone then
         hookResult = "good"
         if hookGui then
             local lbl = hookGui:FindFirstChild("HintLabel")
             if lbl then lbl.Text = Strings.Hook_Good end
         end
-        playSound("onButtonClick")
+        playSound("HookHit")
+        flashIndicator(Color3.fromRGB(90,200,110))
     else
         hookResult = "miss"
         if hookGui then
             local lbl = hookGui:FindFirstChild("HintLabel")
             if lbl then lbl.Text = Strings.Hook_Miss end
         end
-        playSound("onClose")
+        playSound("HookMiss")
+        flashIndicator(Color3.fromRGB(220,90,80))
         -- Небольшая задержка и завершить мини-игру
         task.delay(0.8, function()
             HookResultEvent:FireServer({ result = "miss", zone = currentZone })
@@ -210,10 +248,20 @@ function startCatchPhase()
         currentBehavior = GameConfig.FishBehavior.Lazy
     end
 
+    -- Остановить тряску удочки при выходе из фазы подсечки
+    if rodShakeTween then
+        rodShakeTween:Cancel()
+        rodShakeTween = nil
+        if hookGui then hookGui.Rotation = 0 end
+    end
+
+    fishInZonePrev = false
+    lastRippleTime = 0
+
     setGuiVisible("HookPhase", false)
     setGuiVisible("CatchPhase", true)
 
-    playSound("onButtonClick")
+    playSound("Splash")
 end
 
 function updateCatchPhase(dt)
@@ -245,7 +293,7 @@ function updateCatchPhase(dt)
                 fishPos + fishTargetDir * b.jumpDistance,
                 0, scaleH
             )
-            playSound("onHover")
+            playSound("Splash")
         end
     end
 
@@ -328,6 +376,62 @@ function updateCatchPhase(dt)
             greenZoneFrame.Position = UDim2.new(0, 0, math.clamp(yScale, 0, 1), 0)
         end
 
+        -- Тонировка индикатора рыбы / заполнения шкалы при входе/выходе из зоны
+        if fishInZone ~= fishInZonePrev then
+            if zoneTintTween then zoneTintTween:Cancel() end
+            local targetColor = fishInZone and Color3.fromRGB(255,210,90) or Color3.fromRGB(230,150,70)
+            if fishIndicator then
+                zoneTintTween = TweenService:Create(
+                    fishIndicator,
+                    TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    { BackgroundColor3 = targetColor }
+                )
+                zoneTintTween:Play()
+            end
+
+            -- Эффект ряби при входе в зону (троттлинг ~раз в 0.3с)
+            if fishInZone and not fishInZonePrev then
+                local now = os.clock()
+                if now - lastRippleTime >= 0.3 then
+                    lastRippleTime = now
+                    local effectsLayer = catchGui:FindFirstChild("EffectsLayer")
+                    if effectsLayer and fishIndicator then
+                        local ripple = Instance.new("Frame")
+                        ripple.Name = "Ripple"
+                        ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+                        ripple.BackgroundColor3 = Color3.fromRGB(160,255,180)
+                        ripple.BackgroundTransparency = 0.2
+                        ripple.BorderSizePixel = 0
+                        ripple.Size = UDim2.fromOffset(20, 20)
+                        local fishAbsPos = fishIndicator.AbsolutePosition
+                        local fishAbsSize = fishIndicator.AbsoluteSize
+                        local layerAbsPos = effectsLayer.AbsolutePosition
+                        ripple.Position = UDim2.fromOffset(
+                            fishAbsPos.X - layerAbsPos.X + fishAbsSize.X/2,
+                            fishAbsPos.Y - layerAbsPos.Y + fishAbsSize.Y/2
+                        )
+                        local corner = Instance.new("UICorner")
+                        corner.CornerRadius = UDim.new(1, 0)
+                        corner.Parent = ripple
+                        ripple.Parent = effectsLayer
+
+                        local tween = TweenService:Create(
+                            ripple,
+                            TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            { Size = UDim2.fromOffset(80, 80), BackgroundTransparency = 1 }
+                        )
+                        tween:Play()
+                        tween.Completed:Connect(function()
+                            ripple:Destroy()
+                        end)
+                        playSound("Splash")
+                    end
+                end
+            end
+
+            fishInZonePrev = fishInZone
+        end
+
         -- Stress предупреждение
         local stressLabel = catchGui:FindFirstChild("StressLabel")
         if stressLabel then
@@ -370,7 +474,7 @@ finishCatch = function(success)
             hookResult    = hookResult,
             isPerfectCatch= isPerfectCatch,
         })
-        playSound("onButtonClick")
+        playSound("CatchSuccess")
         -- Защита от зависания: если сервер не ответил FishCaught за 10 сек — разблокировать
         task.delay(10, function()
             if isMinigameActive and currentPhase == "result" then
@@ -381,7 +485,7 @@ finishCatch = function(success)
     else
         -- Рыба сбежала
         isMinigameActive = false
-        playSound("onClose")
+        playSound("CatchFail")
         if catchGui then
             local hint = catchGui:FindFirstChild("EscapeLabel")
             if hint then
@@ -419,6 +523,26 @@ FishCaughtEvent.OnClientEvent:Connect(function(catchEntry)
         if fishImage  then fishImage.Image  = catchEntry.image or "" end  -- PLACEHOLDER
         if nameLabel  then nameLabel.Text   = catchEntry.displayName end
         if rarityLabel then rarityLabel.Text = catchEntry.rarity end
+
+        -- Цвет по редкости
+        local RARITY_COLORS = {
+            Common    = Color3.fromRGB(160,165,175),
+            Uncommon  = Color3.fromRGB(120,200,120),
+            Rare      = Color3.fromRGB(90,160,230),
+            Epic      = Color3.fromRGB(170,110,220),
+            Legendary = Color3.fromRGB(255,180,60),
+            Mythical  = Color3.fromRGB(255,210,90),
+        }
+        local rarityColor = RARITY_COLORS[catchEntry.rarity] or Color3.fromRGB(160,165,175)
+        if nameLabel then nameLabel.TextColor3 = rarityColor end
+        if rarityLabel then rarityLabel.TextColor3 = rarityColor end
+        local rarityBanner = resultGui:FindFirstChild("RarityBanner")
+        if rarityBanner then rarityBanner.BackgroundColor3 = rarityColor end
+
+        local newBadge = resultGui:FindFirstChild("NewBadge")
+        if newBadge then
+            newBadge.Visible = catchEntry.isNew == true
+        end
         if sizeLabel  then sizeLabel.Text   = catchEntry.size end
         if mutLabel   then
             mutLabel.Text    = catchEntry.mutation and Strings["Mutation_" .. catchEntry.mutation] or Strings.Mutation_None
@@ -442,9 +566,22 @@ FishCaughtEvent.OnClientEvent:Connect(function(catchEntry)
             { BackgroundTransparency = 0.1 }
         )
         tween:Play()
+
+        -- "Pop" масштаб: появление с 90% до 100%
+        local targetSize = resultGui.Size
+        local startSize = UDim2.new(
+            targetSize.X.Scale * 0.9, targetSize.X.Offset * 0.9,
+            targetSize.Y.Scale * 0.9, targetSize.Y.Offset * 0.9
+        )
+        resultGui.Size = startSize
+        TweenService:Create(
+            resultGui,
+            TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            { Size = targetSize }
+        ):Play()
     end
 
-    playSound("onButtonClick")
+    playSound("CatchSuccess")
 
     -- Закрыть через 3 секунды или по нажатию
     task.delay(3, function()

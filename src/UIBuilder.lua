@@ -126,31 +126,44 @@ do
 	local hp = frame("HookPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 0.5)
 	hp.Visible = false
 	-- Фоновый бар слайдера
-	local sliderBG = frame("SliderBG", hp, UDim2.fromOffset(500,50), UDim2.new(0.5,-250,0.5,-25), C.PanelDark, 0, RADIUS)
+	local sliderBG = frame("SliderBG", hp, UDim2.fromOffset(520,58), UDim2.new(0.5,-260,0.5,-29), C.PanelDark, 0, RADIUS)
 	stroke(sliderBG)
 	-- Зелёная зона (центр бара, ширина = HookZoneAngle/360 * 500 ≈ 104px)
-	frame("GreenZone", sliderBG, UDim2.fromOffset(104,50), UDim2.new(0.5,-52,0,0), C.Green, 0.35, RADIUS)
+	frame("GreenZone", sliderBG, UDim2.fromOffset(104,58), UDim2.new(0.5,-52,0,0), C.Green, 0.35, RADIUS)
 	-- Perfect зона (центр, уже; ширина = HookPerfectWindow*2/360 * 500 ≈ 42px)
-	frame("PerfectZone", sliderBG, UDim2.fromOffset(42,50), UDim2.new(0.5,-21,0,0), Color3.fromRGB(120,230,140), 0.1, RADIUS)
+	frame("PerfectZone", sliderBG, UDim2.fromOffset(42,58), UDim2.new(0.5,-21,0,0), Color3.fromRGB(120,230,140), 0.1, RADIUS)
 	-- Индикатор (прыгает по бару)
-	local si = frame("SliderIndicator", sliderBG, UDim2.fromOffset(30,50), UDim2.new(0.5,-15,0,0), C.Text, 0, RADIUS)
+	local si = frame("SliderIndicator", sliderBG, UDim2.fromOffset(30,58), UDim2.new(0.5,-15,0,0), C.Text, 0, RADIUS)
 	stroke(si, Color3.fromRGB(20,20,24), 1, 0)
+	-- Дополнительный пульсирующий блеск вокруг индикатора
+	local glowStroke = stroke(si, C.Green, 3, 0.5)
+	glowStroke.Name = "GlowStroke"
 	-- Разделитель в центре
-	frame("CenterLine", sliderBG, UDim2.fromOffset(2,50), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
-	lbl("HintLabel", hp, "Нажми [E] когда курсор в зелёной зоне!", UDim2.fromOffset(480,36), UDim2.new(0.5,-240,0.5,40), C.Text, true)
-	lbl("ZoneLabel", hp, "🎣  Заброс", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.5,-100), C.TextDim, true)
+	frame("CenterLine", sliderBG, UDim2.fromOffset(2,58), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
+	lbl("HintLabel", hp, "Нажми [E] когда курсор в зелёной зоне!", UDim2.fromOffset(480,36), UDim2.new(0.5,-240,0.5,46), C.Text, true)
+	local zoneLabel = lbl("ZoneLabel", hp, "🎣  ПОДСЕЧКА!", UDim2.fromOffset(340,54), UDim2.new(0.5,-170,0.5,-110), C.Text, true)
+	zoneLabel.TextStrokeTransparency = 0.5
 
 	-- Catch Phase
 	local cp = frame("CatchPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 0.5)
 	cp.Visible = false
 	local sf = frame("ScaleFrame", cp, UDim2.fromOffset(60,400), UDim2.new(0.5,-30,0.5,-200), C.PanelDark, 0, RADIUS)
 	stroke(sf)
+	-- "Водяной" фон позади шкалы — две полупрозрачные подложки для глубины
+	local waterBack = frame("WaterBack", sf, UDim2.new(1,4,1,4), UDim2.new(0,-2,0,-2), Color3.fromRGB(40,90,120), 0.75, RADIUS)
+	waterBack.ZIndex = 0
+	local waterMid = frame("WaterMid", sf, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), Color3.fromRGB(50,110,150), 0.85, RADIUS)
+	waterMid.ZIndex = 0
 	frame("GreenZone", sf, UDim2.new(1,0,0,80), UDim2.new(0,0,0.5,-40), C.Green, 0.3, RADIUS)
 	local fi = img("FishIndicator", sf, UDim2.fromOffset(50,30), UDim2.new(-1,0,0.5,-15))
 	fi.BackgroundColor3 = Color3.fromRGB(230,150,70); fi.BackgroundTransparency = 0; corner(fi, RADIUS)
 	local pb = frame("ProgressBar", cp, UDim2.fromOffset(20,400), UDim2.new(0.5,35,0.5,-200), C.PanelDark, 0, RADIUS)
 	stroke(pb)
-	frame("Fill", pb, UDim2.new(1,0,0,0), UDim2.new(0,0,1,0), C.Green, 0)
+	local fill = frame("Fill", pb, UDim2.new(1,0,0,0), UDim2.new(0,0,1,0), C.Green, 0)
+	local fillGrad = Instance.new("UIGradient")
+	fillGrad.Color = ColorSequence.new(C.Green, Color3.fromRGB(160,255,180))
+	fillGrad.Rotation = 90
+	fillGrad.Parent = fill
 	local sl = lbl("StressLabel", cp, "⚠ Рыба злится!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.15,0), C.Red, true)
 	sl.Visible = false
 	local pl = lbl("PerfectLabel", cp, "PERFECT CATCH!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.08,0), Color3.fromRGB(120,230,140), true)
@@ -159,13 +172,23 @@ do
 	local el = lbl("EscapeLabel", cp, "Рыба сбежала...", UDim2.fromOffset(400,50), UDim2.new(0.5,-200,0.45,0), C.Red, true)
 	el.Visible = false
 
+	-- Слой эффектов (рябь/частицы), на весь экран, поверх остального
+	local effectsLayer = frame("EffectsLayer", cp, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 1)
+	effectsLayer.ClipsDescendants = false
+	effectsLayer.ZIndex = 50
+
 	-- Result Phase
 	local rp = frame("ResultPhase", g, UDim2.fromOffset(400,550), UDim2.new(0.5,-200,0.5,-275), C.PanelBG, 0.1, 6)
 	rp.Visible = false
 	stroke(rp)
+	-- Цветная полоса-баннер сверху (тонируется клиентом по редкости рыбы)
+	local rarityBanner = frame("RarityBanner", rp, UDim2.new(1,0,0,8), UDim2.new(0,0,0,0), C.TextDim, 0, RADIUS)
+	rarityBanner.Name = "RarityBanner"
 	local fi2 = img("FishImage", rp, UDim2.new(0.8,0,0.38,0), UDim2.new(0.1,0,0.04,0))
 	fi2.BackgroundColor3 = C.PanelDark; fi2.BackgroundTransparency = 0.2; corner(fi2, RADIUS)
-	lbl("FishName",    rp, "???",          UDim2.new(1,0,0.08,0), UDim2.new(0,0,0.44,0), C.Text, true)
+	local nb = lbl("NewBadge", rp, "✨ NEW!", UDim2.fromOffset(90,30), UDim2.new(1,-100,0,12), Color3.fromRGB(255,210,90), true)
+	nb.Visible = false; nb.TextStrokeTransparency = 0.4; nb.ZIndex = 5
+	lbl("FishName",    rp, "???",          UDim2.new(1,0,0.10,0), UDim2.new(0,0,0.44,0), C.Text, true, 26)
 	lbl("FishRarity",  rp, "Common",       UDim2.new(0.5,0,0.07,0), UDim2.new(0.1,0,0.52,0), C.TextDim, false)
 	lbl("FishSize",    rp, "Normal",       UDim2.new(0.5,0,0.07,0), UDim2.new(0.5,0,0.52,0), C.TextDim, false)
 	local fm = lbl("FishMutation", rp, "", UDim2.new(1,0,0.07,0), UDim2.new(0,0,0.60,0), Color3.fromRGB(200,140,230), false)
@@ -221,7 +244,9 @@ do
 	panel.AnchorPoint = Vector2.new(0.5,0.5)
 	stroke(panel)
 	titleBar(panel, 44)
-	lbl("Title", panel, "🎣 Магазин удочек", UDim2.new(1,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
+	lbl("Title", panel, "🎣 Магазин удочек", UDim2.new(0.7,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
+	local coinsLbl = lbl("ShopCoinsLabel", panel, "🪙 ---", UDim2.new(0.28,0,0,44), UDim2.new(0.72,0,0,0), C.Gold, true, 16)
+	coinsLbl.TextXAlignment = Enum.TextXAlignment.Right
 	local grid = Instance.new("ScrollingFrame"); grid.Name = "RodGrid"
 	grid.Size = UDim2.new(0.95,0,1,-110); grid.Position = UDim2.new(0.025,0,0,54)
 	grid.BackgroundTransparency = 1; grid.BorderSizePixel = 0
@@ -476,7 +501,45 @@ do
 end
 
 -- ══════════════════════════════════════════════════════════════
---  12. TEST BUTTONS (Dev panel)
+--  12. NPC DIALOG GUI (Grow a Garden style)
+-- ══════════════════════════════════════════════════════════════
+do
+	local g = scrGui("NPCDialogGui", 135); g.Enabled = false
+
+	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0))
+	dim.BackgroundTransparency = 0.45; dim.AutoButtonColor = false
+
+	local panel = frame("Panel", g, UDim2.fromOffset(600,180), UDim2.new(0.5,0,1,-40), C.PanelBG, 0, 6)
+	panel.AnchorPoint = Vector2.new(0.5,1)
+	stroke(panel)
+
+	-- Portrait
+	local portrait = frame("Portrait", panel, UDim2.fromOffset(150,150), UDim2.fromOffset(15,15), C.PanelDark, 0, RADIUS)
+	stroke(portrait)
+	local pIcon = lbl("PortraitIcon", portrait, "🧑", UDim2.fromScale(1,1), UDim2.new(0,0,0,0), C.Text, true)
+	pIcon.TextScaled = true
+
+	-- Name label above portrait
+	local nameLabel = lbl("NameLabel", panel, "NPC", UDim2.new(0,150,0,28), UDim2.fromOffset(15,-32), C.Text, true, 16)
+	nameLabel.BackgroundTransparency = 1
+
+	-- Dialog text (right of portrait)
+	local dialogText = lbl("DialogText", panel, "", UDim2.new(1,-190,0,100), UDim2.fromOffset(180,15), C.Text, false, 16)
+	dialogText.TextXAlignment = Enum.TextXAlignment.Left
+	dialogText.TextYAlignment = Enum.TextYAlignment.Top
+	dialogText.TextScaled = false
+
+	-- Choices row (bottom-right of panel)
+	local choicesRow = frame("ChoicesRow", panel, UDim2.new(1,-190,0,40), UDim2.new(0,180,1,-55), Color3.new(0,0,0), 1)
+	local c1 = btn("Choice1", choicesRow, "Да!", UDim2.new(0.48,0,1,0), UDim2.new(0,0,0,0), C.BtnGreen, C.Text, 15)
+	corner(c1, RADIUS); stroke(c1)
+	local c2 = btn("Choice2", choicesRow, "Может позже", UDim2.new(0.48,0,1,0), UDim2.new(0.52,0,0,0), C.Btn, C.Text, 15)
+	corner(c2, RADIUS); stroke(c2)
+	choicesRow.Visible = false
+end
+
+-- ══════════════════════════════════════════════════════════════
+--  13. TEST BUTTONS (Dev panel)
 -- ══════════════════════════════════════════════════════════════
 do
 	local g = scrGui("TestButtons", 200)
@@ -494,7 +557,7 @@ print("✅ ReefDiver UIBuilder завершён!")
 print("   Создано GUI в StarterGui:")
 local names = {"MainHUD","FishingGui","EventBanner","AnnounceBanner","ComboDisplay",
 	"ShopGui","DailyRewardGui","ZoneMenu","MonetizationShop","BoostIndicator",
-	"ReefDiverInventory","TestButtons"}
+	"ReefDiverInventory","NPCDialogGui","TestButtons"}
 for _, n in ipairs(names) do
 	local exists = StarterGui:FindFirstChild(n) ~= nil
 	print("   " .. (exists and "✓" or "✗") .. " " .. n)

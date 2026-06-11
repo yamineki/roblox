@@ -207,11 +207,16 @@ for _, z in ipairs(ZONE_DATA) do
         fishLbl.Parent                  = bb
 
         table.insert(allFish, {
-            part      = fishPart,
-            fin       = fin,
-            zoneData  = z,
-            target    = randomPosInZone(z),
-            moveTimer = rng:NextNumber(0, 3),  -- разный старт
+            part         = fishPart,
+            fin          = fin,
+            zoneData     = z,
+            target       = randomPosInZone(z),
+            moveTimer    = rng:NextNumber(0, 3),  -- разный старт
+            currentCFrame = fishPart.CFrame,
+            bobPhase     = rng:NextNumber(0, math.pi * 2),
+            frozen       = false,
+            frozenUntil  = 0,
+            frozenPlayer = nil,
         })
     end
 end
@@ -225,27 +230,62 @@ RunService.Heartbeat:Connect(function(dt)
         local part = fish.part
         if not part or not part.Parent then continue end
 
-        fish.moveTimer = fish.moveTimer - dt
-        if fish.moveTimer <= 0 then
-            -- Новая цель внутри зоны
-            fish.target = randomPosInZone(fish.zoneData)
-            fish.moveTimer = rng:NextNumber(2, 5)
+        local bob = math.sin(tick() * 1.5 + fish.bobPhase) * 0.3
+        local targetCF = nil
+
+        if fish.frozen then
+            -- Заморожена для мини-игры — смотрим на игрока
+            local player = fish.frozenPlayer
+            local hrp = nil
+            if player and player.Character then
+                hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            end
+
+            if tick() >= fish.frozenUntil then
+                fish.frozen = false
+                fish.frozenPlayer = nil
+                fish.target = randomPosInZone(fish.zoneData)
+                fish.moveTimer = rng:NextNumber(2, 5)
+            elseif hrp then
+                local current = fish.currentCFrame.Position
+                local pos = Vector3.new(current.X, current.Y + bob * dt * 10, current.Z)
+                -- pos оставляем близкой к текущей, лишь добавляем покачивание
+                pos = current
+                local lookPos = Vector3.new(pos.X, pos.Y + bob, pos.Z)
+                targetCF = CFrame.lookAt(lookPos, hrp.Position) * CFrame.Angles(0, math.rad(90), 0)
+            end
+            -- если hrp == nil (игрок ушёл) — fall through к обычному поведению ниже
         end
 
-        -- Плавно двигаться к цели
-        local current = part.CFrame.Position
-        local dir = fish.target - current
-        local dist = dir.Magnitude
-        if dist > 0.2 then
-            local speed = rng:NextNumber(FISH_SPEED_MIN, FISH_SPEED_MAX)
-            local move  = math.min(dist, speed * dt)
-            local newPos = current + dir.Unit * move
-            -- Повернуть рыбу в сторону движения
-            local cf = CFrame.lookAt(newPos, fish.target) * CFrame.Angles(0, math.rad(90), 0)
-            part.CFrame = cf
-            -- Обновить плавник
+        if not fish.frozen and targetCF == nil then
+            fish.moveTimer = fish.moveTimer - dt
+            if fish.moveTimer <= 0 then
+                -- Новая цель внутри зоны
+                fish.target = randomPosInZone(fish.zoneData)
+                fish.moveTimer = rng:NextNumber(2, 5)
+            end
+
+            -- Плавно двигаться к цели
+            local current = fish.currentCFrame.Position
+            local dir = fish.target - current
+            local dist = dir.Magnitude
+            if dist > 0.2 then
+                local speed = rng:NextNumber(FISH_SPEED_MIN, FISH_SPEED_MAX)
+                local move  = math.min(dist, speed * dt)
+                local newPos = current + dir.Unit * move
+                local bobbedPos = Vector3.new(newPos.X, newPos.Y + bob, newPos.Z)
+                targetCF = CFrame.lookAt(bobbedPos, bobbedPos + dir.Unit) * CFrame.Angles(0, math.rad(90), 0)
+            else
+                local bobbedPos = Vector3.new(current.X, current.Y + bob, current.Z)
+                targetCF = fish.currentCFrame - fish.currentCFrame.Position + bobbedPos
+            end
+        end
+
+        if targetCF then
+            fish.currentCFrame = fish.currentCFrame:Lerp(targetCF, math.min(1, dt * 4))
+            part.CFrame = fish.currentCFrame
             if fish.fin then
-                fish.fin.CFrame = cf * CFrame.new(0, 0.9, 0)
+                fish.fin.CFrame = fish.currentCFrame * CFrame.new(0, 0.9, 0)
             end
         end
     end
@@ -277,6 +317,22 @@ end
 -- ЗАПРОС НАЧАЛА РЫБАЛКИ (Client → Server)
 -- ══════════════════════════════════════════════════════════════
 local activeFishing = {}  -- userId → true (защита от двойных запросов)
+local playerFrozenFish = {}  -- userId → fish entry
+
+local function unfreezeFish(fish)
+    fish.frozen = false
+    fish.frozenPlayer = nil
+    fish.target = randomPosInZone(fish.zoneData)
+    fish.moveTimer = rng:NextNumber(2, 5)
+end
+
+local function unfreezeForPlayer(userId)
+    local prev = playerFrozenFish[userId]
+    if prev then
+        unfreezeFish(prev)
+        playerFrozenFish[userId] = nil
+    end
+end
 
 RequestFishing.OnServerEvent:Connect(function(player)
     local userId = tostring(player.UserId)
@@ -307,6 +363,28 @@ RequestFishing.OnServerEvent:Connect(function(player)
     activeFishing[userId] = true
     StartFishing:FireClient(player, { zone = zoneName })
 
+    -- Заморозить ближайшую рыбу в зоне, чтобы она смотрела на игрока
+    unfreezeForPlayer(userId)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        local nearest, nearestDist = nil, math.huge
+        for _, fish in ipairs(allFish) do
+            if fish.zoneData.id == zoneName and fish.part and fish.part.Parent then
+                local d = (fish.part.Position - hrp.Position).Magnitude
+                if d < nearestDist then
+                    nearest = fish
+                    nearestDist = d
+                end
+            end
+        end
+        if nearest then
+            nearest.frozen = true
+            nearest.frozenUntil = tick() + 15
+            nearest.frozenPlayer = player
+            playerFrozenFish[userId] = nearest
+        end
+    end
+
     -- Разблокировать после таймаута (15 сек)
     task.delay(15, function()
         activeFishing[userId] = nil
@@ -315,19 +393,25 @@ end)
 
 -- Сбросить флаг когда сервер обработал CatchResult
 Remotes:WaitForChild("CatchResult").OnServerEvent:Connect(function(player)
-    activeFishing[tostring(player.UserId)] = nil
+    local userId = tostring(player.UserId)
+    activeFishing[userId] = nil
+    unfreezeForPlayer(userId)
 end)
 
 -- Сбросить флаг при промахе в Hook Phase (клиент шлёт result = "miss")
 Remotes:WaitForChild("HookResult").OnServerEvent:Connect(function(player, payload)
     if type(payload) == "table" and payload.result == "miss" then
-        activeFishing[tostring(player.UserId)] = nil
+        local userId = tostring(player.UserId)
+        activeFishing[userId] = nil
+        unfreezeForPlayer(userId)
     end
 end)
 
 -- Сбросить при выходе игрока
 Players.PlayerRemoving:Connect(function(player)
-    activeFishing[tostring(player.UserId)] = nil
+    local userId = tostring(player.UserId)
+    activeFishing[userId] = nil
+    unfreezeForPlayer(userId)
 end)
 
 print("[ReefDiver] WorldSetup: зоны, рыбы AI, рыбалка ✓")
