@@ -169,6 +169,14 @@ R.CatchResult.OnServerEvent:Connect(function(player, requestData)
     local boostsWithGP = data.activeBoosts or {}
     boostsWithGP._gamepassMutationMult = gpMult.mutation
 
+    -- BIG CATCH: бонус удачи за крупную рыбу-силуэт.
+    -- Атрибут выставляет СЕРВЕР (FishingSpotSetup) по атрибуту модели рыбы —
+    -- клиенту не доверяем, он бонус запросить не может.
+    local luckMult = gpMult.luck
+    if player:GetAttribute("FishingBigCatch") == true then
+        luckMult = luckMult * 1.5
+    end
+
     local serverRequest = {
         zone           = activeZone,
         rodId          = equippedRodId,
@@ -178,7 +186,7 @@ R.CatchResult.OnServerEvent:Connect(function(player, requestData)
         activeEvent    = EventService:GetActiveEvent(),
         rebirthLevel   = data.rebirthLevel or 0,
         comboMult      = comboMult,
-        luckMult       = gpMult.luck,
+        luckMult       = luckMult,
         coinMult       = gpMult.coin,
     }
 
