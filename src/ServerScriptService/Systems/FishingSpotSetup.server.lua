@@ -318,6 +318,13 @@ Remotes:WaitForChild("CatchResult").OnServerEvent:Connect(function(player)
     activeFishing[tostring(player.UserId)] = nil
 end)
 
+-- Сбросить флаг при промахе в Hook Phase (клиент шлёт result = "miss")
+Remotes:WaitForChild("HookResult").OnServerEvent:Connect(function(player, payload)
+    if type(payload) == "table" and payload.result == "miss" then
+        activeFishing[tostring(player.UserId)] = nil
+    end
+end)
+
 -- Сбросить при выходе игрока
 Players.PlayerRemoving:Connect(function(player)
     activeFishing[tostring(player.UserId)] = nil
