@@ -43,9 +43,9 @@ end
 --  ЦВЕТА СОСТОЯНИЙ КАРТОЧЕК
 -- ══════════════════════════════════════════════════════════════
 local STATE = {
-    claimed  = { bg = Color3.fromRGB(12, 22, 12),  border = Color3.fromRGB(60, 130, 60),   alpha = 0.5  },
-    current  = { bg = Color3.fromRGB(5,  20, 45),  border = Color3.fromRGB(0,  200, 255),  alpha = 0.05 },
-    future   = { bg = Color3.fromRGB(10, 16, 28),  border = Color3.fromRGB(60, 80,  120),  alpha = 0.3  },
+    claimed  = { bg = Color3.fromRGB(34, 42, 36),  border = Color3.fromRGB(70, 160, 90),   alpha = 0.3  },
+    current  = { bg = Color3.fromRGB(44, 46, 53),  border = Color3.fromRGB(235, 235, 235), alpha = 0    },
+    future   = { bg = Color3.fromRGB(32, 32, 38),  border = Color3.fromRGB(70, 75, 85),    alpha = 0.1  },
 }
 
 -- ══════════════════════════════════════════════════════════════
@@ -149,8 +149,8 @@ local function applyStatus(status)
     claimBtn.Active           = status.canClaim
     claimBtn.AutoButtonColor  = status.canClaim
     claimBtn.BackgroundColor3 = status.canClaim
-        and Color3.fromRGB(0, 160, 255)
-        or  Color3.fromRGB(40, 50, 70)
+        and Color3.fromRGB(70, 160, 90)
+        or  Color3.fromRGB(50, 52, 60)
     claimBtn.Text = status.canClaim and "🎁  Забрать награду" or "✓  Уже получено"
 
     if countdownConn then countdownConn:Disconnect(); countdownConn = nil end
@@ -248,7 +248,7 @@ DailyRewardClaimed.OnClientEvent:Connect(function(payload)
         flash.ZIndex = 6
         flash.BorderSizePixel = 0
         flash.Parent = dayCards[day].frame
-        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0,10); c.Parent = flash
+        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0,4); c.Parent = flash
         TweenService:Create(flash,
             TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             { BackgroundTransparency = 1 }):Play()
@@ -257,7 +257,7 @@ DailyRewardClaimed.OnClientEvent:Connect(function(payload)
 
     claimBtn.Active = false
     claimBtn.AutoButtonColor = false
-    claimBtn.BackgroundColor3 = Color3.fromRGB(40, 50, 70)
+    claimBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
     claimBtn.Text = "✓  Уже получено"
 
     if currentStatus then

@@ -74,7 +74,7 @@ end
 local function updateRod(rodId)
     local rod = RodData:GetRod(rodId)
     if rod and rodLabel then
-        rodLabel.Text = rod.displayName
+        rodLabel.Text = "🎣 " .. rod.displayName
     end
 end
 

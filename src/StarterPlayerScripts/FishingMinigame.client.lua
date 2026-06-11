@@ -99,8 +99,9 @@ function startHookPhase()
     if hookGui then
         local label = hookGui:FindFirstChild("HintLabel")
         if label then label.Text = Strings.Hook_Press end
-        -- Сбросить позицию индикатора
-        local indicator = hookGui:FindFirstChild("SliderIndicator")
+        -- Сбросить позицию индикатора (SliderIndicator лежит внутри SliderBG)
+        local sliderBG  = hookGui:FindFirstChild("SliderBG")
+        local indicator = sliderBG and sliderBG:FindFirstChild("SliderIndicator")
         if indicator then
             indicator.Position = UDim2.new(0.5, -15, 0, 0)
         end
@@ -117,11 +118,10 @@ function updateHookPhase(dt)
     local t = (math.sin(math.rad(arrowAngle)) + 1) / 2  -- 0..1
 
     if hookGui then
-        -- Новый горизонтальный слайдер
-        local indicator = hookGui:FindFirstChild("SliderIndicator")
+        -- Новый горизонтальный слайдер (SliderIndicator лежит внутри SliderBG)
         local sliderBG  = hookGui:FindFirstChild("SliderBG")
-        if indicator and sliderBG then
-            local barW = sliderBG.AbsoluteSize.X
+        local indicator = sliderBG and sliderBG:FindFirstChild("SliderIndicator")
+        if indicator then
             indicator.Position = UDim2.new(t, -15, 0, 0)
         end
         -- Старый вращающийся Arrow (если ещё в GUI)
@@ -135,10 +135,13 @@ end
 function onHookInput()
     if currentPhase ~= "hook" then return end
 
+    -- БАГФИКС: раньше проверка шла по углу (центр 90°), а визуально зелёная зона
+    -- находится в ЦЕНТРЕ горизонтального бара (t = 0.5, что соответствует sin = 0).
+    -- Теперь логика совпадает с тем, что видит игрок: считаем позицию индикатора
+    -- по бару и сравниваем с центром в тех же "градусных" единицах, что и зоны.
+    local t = (math.sin(math.rad(arrowAngle)) + 1) / 2  -- 0..1 позиция индикатора
+    local diff = math.abs(t - 0.5) * 360                -- расстояние от центра зоны в ед. HookZoneAngle
     local halfZone = GameConfig.Fishing.HookZoneAngle / 2
-    -- Предполагаем, что зелёная зона центрирована в районе 90°
-    local zoneCenter = 90
-    local diff = math.abs(((arrowAngle - zoneCenter) + 180) % 360 - 180)
 
     if diff <= GameConfig.Fishing.HookPerfectWindow then
         hookResult = "perfect"

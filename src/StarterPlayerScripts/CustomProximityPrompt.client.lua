@@ -15,28 +15,28 @@ local Player = Players.LocalPlayer
 -- icon = emoji-заглушка (PLACEHOLDER: можно заменить на ImageLabel с rbxassetid)
 local PROMPT_STYLES = {
     Fishing = {
-        accent   = Color3.fromRGB(0, 200, 255),
-        accentDark = Color3.fromRGB(0, 90, 130),
+        accent   = Color3.fromRGB(110, 180, 230),
+        accentDark = Color3.fromRGB(44, 46, 53),
         icon     = "🎣",
-        glow     = Color3.fromRGB(0, 220, 255),
+        glow     = Color3.fromRGB(70, 75, 85),
     },
     ZoneKeeper = {
-        accent   = Color3.fromRGB(140, 90, 255),
-        accentDark = Color3.fromRGB(70, 40, 140),
+        accent   = Color3.fromRGB(170, 130, 220),
+        accentDark = Color3.fromRGB(44, 46, 53),
         icon     = "🌀",
-        glow     = Color3.fromRGB(160, 110, 255),
+        glow     = Color3.fromRGB(70, 75, 85),
     },
     NPC = {
-        accent   = Color3.fromRGB(255, 190, 60),
-        accentDark = Color3.fromRGB(140, 95, 20),
+        accent   = Color3.fromRGB(255, 210, 90),
+        accentDark = Color3.fromRGB(44, 46, 53),
         icon     = "💬",
-        glow     = Color3.fromRGB(255, 210, 90),
+        glow     = Color3.fromRGB(70, 75, 85),
     },
     Default = {
-        accent   = Color3.fromRGB(120, 200, 255),
-        accentDark = Color3.fromRGB(40, 80, 120),
+        accent   = Color3.fromRGB(160, 165, 175),
+        accentDark = Color3.fromRGB(44, 46, 53),
         icon     = "✦",
-        glow     = Color3.fromRGB(150, 210, 255),
+        glow     = Color3.fromRGB(70, 75, 85),
     },
 }
 
@@ -85,29 +85,22 @@ local function createPromptGui(prompt, inputType)
     card.AnchorPoint = Vector2.new(0.5, 0.5)
     card.Position = UDim2.fromScale(0.5, 0.5)
     card.Size = UDim2.fromOffset(0, 0)  -- анимируется до 240x64
-    card.BackgroundColor3 = Color3.fromRGB(10, 16, 28)
-    card.BackgroundTransparency = 0.1
+    card.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+    card.BackgroundTransparency = 0.05
     card.BorderSizePixel = 0
     card.Parent = root
 
     local cardCorner = Instance.new("UICorner")
-    cardCorner.CornerRadius = UDim.new(0, 14)
+    cardCorner.CornerRadius = UDim.new(0, 4)
     cardCorner.Parent = card
 
-    -- Акцентная обводка
+    -- Тонкая обводка (Fisch-стиль, без свечения)
     local cardStroke = Instance.new("UIStroke")
-    cardStroke.Color = style.accent
-    cardStroke.Thickness = 2
-    cardStroke.Transparency = 0.1
+    cardStroke.Color = Color3.fromRGB(70, 75, 85)
+    cardStroke.Thickness = 1
+    cardStroke.Transparency = 0
     cardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     cardStroke.Parent = card
-
-    -- Лёгкое свечение (внешняя полупрозрачная рамка)
-    local glow = Instance.new("UIStroke")
-    glow.Color = style.glow
-    glow.Thickness = 6
-    glow.Transparency = 0.85
-    glow.Parent = card
 
     -- ── Иконка действия (слева, в кружке) ──
     local iconHolder = Instance.new("Frame")
@@ -116,11 +109,11 @@ local function createPromptGui(prompt, inputType)
     iconHolder.Position = UDim2.new(0, 8, 0.5, 0)
     iconHolder.Size = UDim2.fromOffset(48, 48)
     iconHolder.BackgroundColor3 = style.accentDark
-    iconHolder.BackgroundTransparency = 0.2
+    iconHolder.BackgroundTransparency = 0
     iconHolder.BorderSizePixel = 0
     iconHolder.Parent = card
     local ihCorner = Instance.new("UICorner")
-    ihCorner.CornerRadius = UDim.new(0, 12)
+    ihCorner.CornerRadius = UDim.new(0, 4)
     ihCorner.Parent = iconHolder
 
     -- PLACEHOLDER: emoji-иконка (замени на ImageLabel.Image = rbxassetid)
@@ -172,11 +165,11 @@ local function createPromptGui(prompt, inputType)
     keyHolder.BorderSizePixel = 0
     keyHolder.Parent = card
     local khCorner = Instance.new("UICorner")
-    khCorner.CornerRadius = UDim.new(0, 8)
+    khCorner.CornerRadius = UDim.new(0, 4)
     khCorner.Parent = keyHolder
     local khStroke = Instance.new("UIStroke")
-    khStroke.Color = style.accent
-    khStroke.Thickness = 2
+    khStroke.Color = Color3.fromRGB(70, 75, 85)
+    khStroke.Thickness = 1
     khStroke.Parent = keyHolder
 
     local keyText = Instance.new("TextLabel")
@@ -208,7 +201,7 @@ local function createPromptGui(prompt, inputType)
     holdStroke.Transparency = 0.2
     holdStroke.Parent = holdRing
     local holdCorner = Instance.new("UICorner")
-    holdCorner.CornerRadius = UDim.new(0, 10)
+    holdCorner.CornerRadius = UDim.new(0, 5)
     holdCorner.Parent = holdRing
 
     return billboard, {
@@ -317,7 +310,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
     flash.Completed:Connect(function()
         TweenService:Create(card,
             TweenInfo.new(0.2),
-            { BackgroundColor3 = Color3.fromRGB(10, 16, 28) }
+            { BackgroundColor3 = Color3.fromRGB(32, 32, 38) }
         ):Play()
     end)
 end)

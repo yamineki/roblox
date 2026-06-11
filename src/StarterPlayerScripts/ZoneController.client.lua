@@ -40,8 +40,8 @@ local ZONE_COLORS = {
     Abyss       = Color3.fromRGB(80, 10, 110),
 }
 
-local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=o end
-local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1.5; s.Transparency=0.4; s.Parent=o end
+local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 4); c.Parent=o end
+local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1; s.Transparency=0; s.Parent=o end
 
 -- ══ ПОСТРОИТЬ СТРОКИ ЗОН ══
 local function buildRows()
@@ -59,12 +59,12 @@ local function buildRows()
         local row = Instance.new("Frame")
         row.Name = zoneName
         row.Size = UDim2.new(1, 0, 0, 60)
-        row.BackgroundColor3 = Color3.fromRGB(12, 22, 40)
-        row.BackgroundTransparency = 0.2
+        row.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+        row.BackgroundTransparency = 0
         row.LayoutOrder = z.order
         row.Parent = list
-        corner(row, 8)
-        stroke(row, ZONE_COLORS[zoneName] or Color3.new(1,1,1), z.current and 2.5 or 1)
+        corner(row, 4)
+        stroke(row, z.current and Color3.fromRGB(235, 235, 235) or Color3.fromRGB(70, 75, 85), z.current and 2 or 1)
 
         local tag = Instance.new("Frame")
         tag.Size = UDim2.fromOffset(6, 44)
@@ -79,7 +79,7 @@ local function buildRows()
         nameLabel.Position = UDim2.fromOffset(24, 6)
         nameLabel.BackgroundTransparency = 1
         nameLabel.Text = (Strings["Zone_" .. zoneName] or zoneName)
-        nameLabel.TextColor3 = Color3.new(1,1,1)
+        nameLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextSize = 16
         nameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -90,7 +90,7 @@ local function buildRows()
         depthLabel.Position = UDim2.fromOffset(24, 34)
         depthLabel.BackgroundTransparency = 1
         depthLabel.Text = z.depthLabel
-        depthLabel.TextColor3 = Color3.fromRGB(120, 170, 210)
+        depthLabel.TextColor3 = Color3.fromRGB(160, 165, 175)
         depthLabel.Font = Enum.Font.Gotham
         depthLabel.TextSize = 12
         depthLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -101,17 +101,18 @@ local function buildRows()
         actionBtn.Position = UDim2.new(1, -160, 0.5, -20)
         actionBtn.Font = Enum.Font.GothamBold
         actionBtn.TextSize = 14
-        actionBtn.TextColor3 = Color3.new(1,1,1)
+        actionBtn.TextColor3 = Color3.fromRGB(235, 235, 235)
+        actionBtn.BorderSizePixel = 0  -- БАГФИКС: убрана серая рамка по умолчанию
         actionBtn.Parent = row
-        corner(actionBtn, 6)
+        corner(actionBtn, 4)
 
         if z.current then
             actionBtn.Text = "📍 Вы здесь"
-            actionBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
+            actionBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
             actionBtn.Active = false
         elseif z.unlocked then
             actionBtn.Text = "Перейти →"
-            actionBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+            actionBtn.BackgroundColor3 = Color3.fromRGB(70, 160, 90)
             actionBtn.MouseButton1Click:Connect(function()
                 EnterZone:FireServer(zoneName)
                 gui.Enabled = false
@@ -119,13 +120,13 @@ local function buildRows()
         else
             if (status.rebirthLevel or 0) < (z.minRebirth or 0) then
                 actionBtn.Text = "🔒 Rebirth " .. z.minRebirth
-                actionBtn.BackgroundColor3 = Color3.fromRGB(90, 60, 120)
+                actionBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
                 actionBtn.Active = false
             else
                 actionBtn.Text = "🪙 " .. z.unlockCost
                 actionBtn.BackgroundColor3 = (playerCoins >= z.unlockCost)
-                    and Color3.fromRGB(200, 130, 0)
-                    or Color3.fromRGB(80, 80, 80)
+                    and Color3.fromRGB(70, 160, 90)
+                    or Color3.fromRGB(50, 52, 60)
                 actionBtn.MouseButton1Click:Connect(function()
                     UnlockZone:FireServer(zoneName)
                 end)

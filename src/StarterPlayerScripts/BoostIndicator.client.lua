@@ -44,15 +44,15 @@ local function makeChip(boost)
     local chip = Instance.new("Frame")
     chip.Name = boost.id
     chip.Size = UDim2.fromOffset(boost.permanent and 64 or 90, 32)
-    chip.BackgroundColor3 = Color3.fromRGB(12, 20, 34)
-    chip.BackgroundTransparency = 0.1
+    chip.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+    chip.BackgroundTransparency = 0.05
     chip.BorderSizePixel = 0
     chip.LayoutOrder = boost.permanent and 1 or 2
     chip.Parent = container
-    corner(chip, 8)
+    corner(chip, 4)
 
     local s = Instance.new("UIStroke")
-    s.Color = color; s.Thickness = 1.5; s.Transparency = 0.2; s.Parent = chip
+    s.Color = Color3.fromRGB(70, 75, 85); s.Thickness = 1; s.Transparency = 0; s.Parent = chip
 
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Size = UDim2.fromOffset(20, 20)
@@ -69,7 +69,7 @@ local function makeChip(boost)
     multLabel.BackgroundTransparency = 1
     multLabel.Text = boost.permanent
         and (boost.label:match("[%d%.×%+%%]+x?") or "2×")
-        or (string.format("%.0f×", boost.mult or 1))
+        or (string.format("%g×", boost.mult or 1))  -- БАГФИКС: %.0f округлял 1.5× до "2×"
     multLabel.TextColor3 = color
     multLabel.TextScaled = true
     multLabel.Font = Enum.Font.GothamBold
@@ -83,7 +83,7 @@ local function makeChip(boost)
         timerLabel.Position = UDim2.fromOffset(28, 18)
         timerLabel.BackgroundTransparency = 1
         timerLabel.Text = ""
-        timerLabel.TextColor3 = Color3.fromRGB(160, 180, 200)
+        timerLabel.TextColor3 = Color3.fromRGB(160, 165, 175)
         timerLabel.Font = Enum.Font.Gotham
         timerLabel.TextSize = 10
         timerLabel.TextXAlignment = Enum.TextXAlignment.Left

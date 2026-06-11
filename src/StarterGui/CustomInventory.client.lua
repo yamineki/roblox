@@ -101,7 +101,7 @@ local detailPlaceholder     = DetailPanel:WaitForChild("Placeholder")
 -- ══ ХЕЛПЕРЫ ══
 local function makeCorner(parent, radius)
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius or 8)
+    c.CornerRadius = UDim.new(0, radius or 4)
     c.Parent = parent
     return c
 end
@@ -187,7 +187,7 @@ local function updateHotbarSlot(slotIdx, rodId)
         slot.nameLabel.Text = ""
         slot.equipBar.Visible = false
         slot.frame.BackgroundTransparency = 0.5
-        makeStroke(slot.frame, Color3.fromRGB(40, 60, 90), 1, 0.7)
+        makeStroke(slot.frame, Color3.fromRGB(70, 75, 85), 1, 0.5)
         return
     end
 
@@ -209,9 +209,9 @@ local function updateHotbarSlot(slotIdx, rodId)
     slot.equipBar.Visible = equipped
     slot.frame.BackgroundTransparency = equipped and 0.1 or 0.35
     if equipped then
-        makeStroke(slot.frame, Color3.fromRGB(0, 200, 255), 2, 0.1)
+        makeStroke(slot.frame, Color3.fromRGB(235, 235, 235), 2, 0)
     else
-        makeStroke(slot.frame, Color3.fromRGB(40, 80, 120), 1, 0.6)
+        makeStroke(slot.frame, Color3.fromRGB(70, 75, 85), 1, 0)
     end
 end
 
@@ -285,7 +285,7 @@ local function createFishSlot(fishEntry, layoutOrder)
     slotFrame.BorderSizePixel = 0
     slotFrame.LayoutOrder = layoutOrder
     slotFrame.Parent = fishGrid
-    makeCorner(slotFrame, 10)
+    makeCorner(slotFrame, 4)
 
     local stroke = Instance.new("UIStroke")
     stroke.Color = rarityColor

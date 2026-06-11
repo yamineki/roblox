@@ -17,8 +17,8 @@ local PromptGamePass    = Remotes:WaitForChild("PromptGamePass")
 local PromptProduct     = Remotes:WaitForChild("PromptProduct")
 local GamePassPurchased = Remotes:WaitForChild("GamePassPurchased")
 
-local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=o end
-local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1.5; s.Transparency=0.4; s.Parent=o end
+local function corner(o, r) local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 4); c.Parent=o end
+local function stroke(o, col, t) local s=Instance.new("UIStroke"); s.Color=col; s.Thickness=t or 1; s.Transparency=0; s.Parent=o end
 
 -- ══ GUI (создан UIBuilder.lua) ══
 local gui          = PlayerGui:WaitForChild("MonetizationShop", 20)
@@ -38,20 +38,20 @@ local ownedCache = {}
 local function makeCard(cfg, key, isOwned, isProduct, order)
     local card = Instance.new("Frame")
     card.Name = key
-    card.BackgroundColor3 = Color3.fromRGB(14, 24, 42)
+    card.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
     card.BorderSizePixel = 0
     card.LayoutOrder = order
     card.Parent = scroll
-    corner(card, 10)
-    stroke(card, isOwned and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 200, 60), 1)
+    corner(card, 4)
+    stroke(card, isOwned and Color3.fromRGB(70, 160, 90) or Color3.fromRGB(70, 75, 85), 1)
 
     local iconHolder = Instance.new("Frame")
     iconHolder.Size = UDim2.fromOffset(56, 56)
     iconHolder.Position = UDim2.fromOffset(10, 10)
-    iconHolder.BackgroundColor3 = Color3.fromRGB(22, 36, 58)
+    iconHolder.BackgroundColor3 = Color3.fromRGB(44, 46, 53)
     iconHolder.BorderSizePixel = 0
     iconHolder.Parent = card
-    corner(iconHolder, 8)
+    corner(iconHolder, 4)
 
     local iconImg = Instance.new("ImageLabel")
     iconImg.Size = UDim2.fromScale(1,1)
@@ -73,7 +73,7 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     nameLabel.Position = UDim2.fromOffset(76, 10)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = cfg.displayName
-    nameLabel.TextColor3 = Color3.fromRGB(255, 220, 120)
+    nameLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextSize = 15
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -86,7 +86,7 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
         desc.Position = UDim2.fromOffset(76, 32)
         desc.BackgroundTransparency = 1
         desc.Text = cfg.description
-        desc.TextColor3 = Color3.fromRGB(140, 180, 215)
+        desc.TextColor3 = Color3.fromRGB(160, 165, 175)
         desc.Font = Enum.Font.Gotham
         desc.TextSize = 11
         desc.TextXAlignment = Enum.TextXAlignment.Left
@@ -100,21 +100,22 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     buyBtn.Position = UDim2.fromOffset(76, 62)
     buyBtn.Font = Enum.Font.GothamBold
     buyBtn.TextSize = 13
-    buyBtn.TextColor3 = Color3.new(1,1,1)
+    buyBtn.TextColor3 = Color3.fromRGB(235, 235, 235)
+    buyBtn.BorderSizePixel = 0
     buyBtn.Parent = card
-    corner(buyBtn, 6)
+    corner(buyBtn, 4)
 
     if isOwned then
         buyBtn.Text = "✓ Куплено"
-        buyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
         buyBtn.Active = false
     elseif cfg.id == 0 then
         buyBtn.Text = "Скоро"
-        buyBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
         buyBtn.Active = false
     else
         buyBtn.Text = "R$ " .. (cfg.priceRobux or "?")
-        buyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(70, 160, 90)
         buyBtn.MouseButton1Click:Connect(function()
             if isProduct then
                 PromptProduct:FireServer(key)
@@ -149,14 +150,14 @@ local function rebuild()
         scroll.CanvasSize = UDim2.fromOffset(0, rows * 104 + 12)
     end
 
-    tabGamePasses.BackgroundColor3 = currentTab == "gamepasses"
-        and Color3.fromRGB(255, 200, 60) or Color3.fromRGB(20, 32, 52)
+    local ACTIVE_TAB   = Color3.fromRGB(70, 75, 85)
+    local INACTIVE_TAB = Color3.fromRGB(50, 52, 60)
+    tabGamePasses.BackgroundColor3 = currentTab == "gamepasses" and ACTIVE_TAB or INACTIVE_TAB
     tabGamePasses.TextColor3 = currentTab == "gamepasses"
-        and Color3.fromRGB(20, 20, 20) or Color3.new(1,1,1)
-    tabProducts.BackgroundColor3 = currentTab == "products"
-        and Color3.fromRGB(255, 200, 60) or Color3.fromRGB(20, 32, 52)
+        and Color3.fromRGB(235, 235, 235) or Color3.fromRGB(160, 165, 175)
+    tabProducts.BackgroundColor3 = currentTab == "products" and ACTIVE_TAB or INACTIVE_TAB
     tabProducts.TextColor3 = currentTab == "products"
-        and Color3.fromRGB(20, 20, 20) or Color3.new(1,1,1)
+        and Color3.fromRGB(235, 235, 235) or Color3.fromRGB(160, 165, 175)
 end
 
 tabGamePasses.MouseButton1Click:Connect(function()

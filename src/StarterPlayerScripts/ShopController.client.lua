@@ -48,20 +48,25 @@ local function rebuildRodGrid()
         local card = Instance.new("Frame")
         card.Name = rodId
         card.Size = UDim2.new(0.48, 0, 0, 120)
-        card.BackgroundColor3 = Color3.fromRGB(12, 20, 36)
+        card.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
         card.BorderSizePixel = 0
         card.Parent = grid
 
         local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
+        corner.CornerRadius = UDim.new(0, 4)
         corner.Parent = card
+
+        local cardStroke = Instance.new("UIStroke")
+        cardStroke.Color = Color3.fromRGB(70, 75, 85)
+        cardStroke.Thickness = 1
+        cardStroke.Parent = card
 
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Name = "RodName"
         nameLabel.Text = rod.displayName
         nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.TextColor3 = Color3.fromRGB(255, 220, 100)
+        nameLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextScaled = true
         nameLabel.Parent = card
@@ -72,7 +77,7 @@ local function rebuildRodGrid()
         bonusLabel.Size = UDim2.new(1, -8, 0.35, 0)
         bonusLabel.Position = UDim2.new(0, 4, 0.25, 0)
         bonusLabel.BackgroundTransparency = 1
-        bonusLabel.TextColor3 = Color3.fromRGB(160, 210, 185)
+        bonusLabel.TextColor3 = Color3.fromRGB(160, 165, 175)
         bonusLabel.Font = Enum.Font.Gotham
         bonusLabel.TextScaled = true
         bonusLabel.TextWrapped = true
@@ -92,20 +97,20 @@ local function rebuildRodGrid()
         actionButton.BorderSizePixel = 0
         actionButton.Parent = card
         local abCorner = Instance.new("UICorner")
-        abCorner.CornerRadius = UDim.new(0, 6)
+        abCorner.CornerRadius = UDim.new(0, 4)
         abCorner.Parent = actionButton
 
         if isOwned then
             actionButton.Text = "✓ Куплено"
-            actionButton.BackgroundColor3 = Color3.fromRGB(0, 150, 90)
-            actionButton.TextColor3 = Color3.new(1,1,1)
+            actionButton.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
+            actionButton.TextColor3 = Color3.fromRGB(160, 165, 175)
             actionButton.Active = false
         else
             local canAfford = (playerCoins >= rod.price)
             actionButton.Text = (canAfford and "🪙 " or "🔒 ") .. tostring(rod.price)
             actionButton.BackgroundColor3 = canAfford
-                and Color3.fromRGB(200, 120, 0)
-                or  Color3.fromRGB(70, 70, 70)
+                and Color3.fromRGB(70, 160, 90)
+                or  Color3.fromRGB(50, 52, 60)
             actionButton.TextColor3 = Color3.new(1,1,1)
             actionButton.MouseButton1Click:Connect(function()
                 BuyRod:FireServer(rodId)
