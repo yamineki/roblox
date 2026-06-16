@@ -1,12 +1,11 @@
 -- StarterPlayerScripts/NPCDialog.client.lua
--- Reef Diver — Диалоговое окно NPC (стиль Grow a Garden)
--- Печатная машинка + варианты ответа + интеграция с магазинами через ShopBridge
+-- Reef Diver — NPC Dialog (Grow a Garden style)
+-- Typewriter text + choice buttons + shop integration via ShopBridge
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Strings    = require(ReplicatedStorage.Modules.Strings)
 local ShopBridge = require(ReplicatedStorage.Modules.ShopBridge)
 local okSound, SoundFX = pcall(function() return require(ReplicatedStorage.Modules.SoundFX) end)
 
@@ -17,19 +16,18 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local OpenNPC = Remotes:WaitForChild("OpenNPC")
 
 local function playSound(name)
-    if okSound and SoundFX then
-        SoundFX.Play(name)
-    end
+    if okSound and SoundFX then SoundFX.Play(name) end
 end
 
--- ══ GUI (создан UIBuilder.lua) ══
-local gui   = PlayerGui:WaitForChild("NPCDialogGui", 15)
+-- ══ GUI (created by UIBuilder.lua) ══
+local gui = PlayerGui:WaitForChild("NPCDialogGui", 15)
 
-local panel, dim, portrait, portraitIcon, nameLabel, dialogText, choicesRow, choice1, choice2
+local panel, dim, clickArea, portrait, portraitIcon, nameLabel, dialogText, choicesRow, choice1, choice2
 
 if gui then
     dim          = gui:WaitForChild("Dim")
     panel        = gui:WaitForChild("Panel")
+    clickArea    = panel:FindFirstChild("ClickArea")   -- transparent advance button
     portrait     = panel:WaitForChild("Portrait")
     portraitIcon = portrait:WaitForChild("PortraitIcon")
     nameLabel    = panel:WaitForChild("NameLabel")
@@ -39,78 +37,68 @@ if gui then
     choice2      = choicesRow:WaitForChild("Choice2")
 end
 
--- ══ КОНФИГУРАЦИЯ ДИАЛОГОВ ПО NPC ══
+-- ══ DIALOG CONFIG ══
 local DIALOG_CONFIG = {
     RodMaster = {
-        name = Strings.NPC_RodMaster,
+        name = "Rod Master",
         icon = "🎣",
         lines = {
-            Strings.Dialog_RodMaster,
-            "У меня есть удочки на любой вкус — от простых до самых прочных!",
-            "Загляни в мой магазин, не пожалеешь.",
+            "Ahoy there, diver! Looking for a better rod?",
+            "I stock everything from basic poles to deep-sea beasts.",
+            "Step into my shop — you won't be disappointed!",
         },
-        positiveChoice = "Да, покажи!",
-        negativeChoice = "Может позже",
-        action = function()
-            ShopBridge.OpenRodShop()
-        end,
+        positiveChoice = "Show me!",
+        negativeChoice = "Maybe later",
+        action = function() ShopBridge.OpenRodShop() end,
     },
     FishMerchant = {
-        name = Strings.NPC_FishMerchant,
+        name = "Fish Merchant",
         icon = "🐟",
         lines = {
-            Strings.Dialog_FishMerchant,
-            "Свежий улов всегда в цене, неси сюда самое интересное!",
+            "Fresh catch always fetches a good price!",
+            "Bring me your rarest finds — I pay top coin.",
         },
-        positiveChoice = "Хорошо!",
-        negativeChoice = "Пока нет",
-        action = function()
-            -- Продажа рыбы происходит через отдельный интерфейс инвентаря
-        end,
+        positiveChoice = "Got it!",
+        negativeChoice = "Not right now",
+        action = function() end,
     },
     ElderDiver = {
-        name = Strings.NPC_ElderDiver,
+        name = "Elder Diver",
         icon = "🧙",
         lines = {
-            Strings.Dialog_ElderDiver,
-            "Перерождение откроет тебе новые горизонты, но путь назад будет закрыт.",
-            "Подумай хорошенько, прежде чем решаться.",
+            "You've ventured far, young diver...",
+            "Rebirth will unlock new horizons, but there's no turning back.",
+            "Think carefully before you decide.",
         },
-        positiveChoice = "Да!",
-        negativeChoice = "Ещё не готов",
-        action = function()
-            ShopBridge.OpenMonetizationShop()
-        end,
+        positiveChoice = "Rebirth!",
+        negativeChoice = "Not yet",
+        action = function() ShopBridge.OpenMonetizationShop() end,
     },
     ResearchSubmarine = {
-        name = Strings.NPC_ResearchSub,
+        name = "Research Sub",
         icon = "🚤",
         lines = {
-            Strings.Dialog_ResearchSub,
-            "Отправь меня в плавание — а пока занимайся своими делами.",
+            "Send me out on a voyage while you explore!",
+            "I'll bring back treasures from the deep.",
         },
-        positiveChoice = "Отправить!",
-        negativeChoice = "Не сейчас",
-        action = function()
-            -- Интерфейс AFK-экспедиций откроется отдельно
-        end,
+        positiveChoice = "Set sail!",
+        negativeChoice = "Not now",
+        action = function() end,
     },
     Collector = {
-        name = Strings.NPC_Collector,
+        name = "Collector",
         icon = "📖",
         lines = {
-            Strings.Dialog_Collector,
-            "Каждая редкая находка остаётся в твоей коллекции навсегда!",
+            "Every rare catch is logged in your collection forever!",
+            "Complete your FishDex and unlock exclusive rewards.",
         },
-        positiveChoice = "Покажи!",
-        negativeChoice = "Позже",
-        action = function()
-            -- FishDex откроется отдельно
-        end,
+        positiveChoice = "Show me!",
+        negativeChoice = "Later",
+        action = function() end,
     },
 }
 
--- ══ СОСТОЯНИЕ ══
+-- ══ STATE ══
 local isOpen = false
 local currentConfig = nil
 local currentLineIndex = 1
@@ -118,7 +106,7 @@ local typing = false
 local skipRequested = false
 local typeToken = 0
 
--- ══ ПЕЧАТНАЯ МАШИНКА ══
+-- ══ TYPEWRITER ══
 local function typeLine(text)
     typing = true
     skipRequested = false
@@ -135,9 +123,7 @@ local function typeLine(text)
             break
         end
         dialogText.Text = text:sub(1, i)
-        if i % 3 == 0 then
-            playSound("TypeBlip")
-        end
+        if i % 3 == 0 then playSound("TypeBlip") end
         task.wait(0.025)
     end
 
@@ -155,6 +141,7 @@ local function showLine(index)
     typeLine(currentConfig.lines[index])
 end
 
+-- Advance: skip typewriter OR go to next line
 local function advance()
     if typing then
         skipRequested = true
@@ -163,9 +150,10 @@ local function advance()
     if currentLineIndex < #currentConfig.lines then
         showLine(currentLineIndex + 1)
     end
+    -- If on last line and choices are visible, do nothing (player clicks Choice1/Choice2)
 end
 
--- ══ ОТКРЫТЬ / ЗАКРЫТЬ ══
+-- ══ OPEN / CLOSE ══
 local function closeDialog(callback)
     if not gui then return end
     isOpen = false
@@ -188,14 +176,15 @@ local function openDialog(npcId)
     if not gui or not config then return end
 
     currentConfig = config
+    currentLineIndex = 1
     isOpen = true
     gui.Enabled = true
     playSound("Open")
 
     nameLabel.Text = config.name
     portraitIcon.Text = config.icon
-    choice1.Text = config.positiveChoice or "Да"
-    choice2.Text = config.negativeChoice or "Может позже"
+    choice1.Text = config.positiveChoice or "Yes"
+    choice2.Text = config.negativeChoice or "Maybe later"
     choicesRow.Visible = false
 
     panel.Position = UDim2.new(0.5, 0, 1.6, 0)
@@ -206,26 +195,16 @@ local function openDialog(npcId)
     showLine(1)
 end
 
--- ══ ВЗАИМОДЕЙСТВИЯ ══
+-- ══ INTERACTIONS ══
 if gui then
-    -- Клик по диалоговой области — пропустить печать или продолжить
-    dialogText.Active = true
-    dialogText.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
+    -- ClickArea (transparent button covering panel) — advance dialog on click
+    if clickArea then
+        clickArea.MouseButton1Click:Connect(function()
             advance()
-        end
-    end)
+        end)
+    end
 
-    -- Клик по портрету тоже продолжает диалог
-    portrait.Active = true
-    portrait.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-            or input.UserInputType == Enum.UserInputType.Touch then
-            advance()
-        end
-    end)
-
+    -- Choice buttons
     choice1.MouseButton1Click:Connect(function()
         playSound("Click")
         local action = currentConfig and currentConfig.action
@@ -239,18 +218,22 @@ if gui then
         closeDialog()
     end)
 
+    -- Dim only closes when choices are showing (player pressed outside panel)
     if dim then
         dim.MouseButton1Click:Connect(function()
-            closeDialog()
+            if choicesRow.Visible then
+                closeDialog()
+            else
+                advance()
+            end
         end)
     end
 end
 
--- ══ ОТКРЫТЬ ПО СОБЫТИЮ NPC ══
+-- ══ SERVER EVENT ══
 OpenNPC.OnClientEvent:Connect(function(npcId)
-    if DIALOG_CONFIG[npcId] then
-        openDialog(npcId)
-    end
+    if not npcId then return end
+    openDialog(npcId)
 end)
 
-print("[ReefDiver] NPCDialog инициализирован ✓")
+print("[ReefDiver] NPCDialog initialised ✓")

@@ -599,9 +599,12 @@ local function beginFishing()
     startHookPhase()
 end
 
--- Сервер может явно запустить рыбалку (например по ProximityPrompt у воды)
+-- Server starts fishing session (via ProximityPrompt or fallback F key)
+-- Small delay ensures the E-key press that triggered the prompt is fully consumed
+-- before we start listening for hook input (prevents instant auto-hook)
 StartFishing.OnClientEvent:Connect(function(data)
     if data and data.zone then currentZone = data.zone end
+    task.wait(0.12)   -- let ProximityPrompt E-press finish processing
     beginFishing()
 end)
 
@@ -623,13 +626,17 @@ task.spawn(function()
 end)
 
 -- ══ INPUT ══
+-- Hook phase: click (LMB) or tap to hook — avoids conflict with ProximityPrompt E key
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.E and currentPhase == "hook" then
+    if currentPhase ~= "hook" then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
         onHookInput()
     end
 end)
 
+-- Catch phase: hold Space or LMB to reel in
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if currentPhase ~= "catching" then return end

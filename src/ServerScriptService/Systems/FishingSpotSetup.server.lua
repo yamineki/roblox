@@ -123,7 +123,7 @@ for _, z in ipairs(ZONE_DATA) do
     local lbl = Instance.new("TextLabel")
     lbl.Size                  = UDim2.fromScale(1, 1)
     lbl.BackgroundTransparency = 1
-    lbl.Text                  = "🌊 " .. z.id
+    lbl.Text                  = "🌊 " .. z.id:gsub("(%u)", " %1"):gsub("^ ","")  -- split camelCase
     lbl.TextColor3            = z.color
     lbl.TextStrokeTransparency = 0.3
     lbl.TextStrokeColor3      = Color3.new(0, 0, 0)
@@ -283,14 +283,17 @@ local function spawnFish(z, index)
     qLbl.Parent                 = bb
 
     -- ProximityPrompt: ловля конкретной рыбы (E)
+    -- Style=Custom → кастомный UI из CustomProximityPrompt.client.lua (PromptKind="Fishing")
     -- RequiresLineOfSight = false — игрок плавает в 3D, промпт работает с любой стороны
     local prompt = Instance.new("ProximityPrompt")
-    prompt.ActionText            = "Ловить"
-    prompt.ObjectText            = "Рыба"
+    prompt.ActionText            = "Fish"
+    prompt.ObjectText            = "?"
     prompt.KeyboardKeyCode       = Enum.KeyCode.E
     prompt.MaxActivationDistance = PROMPT_DISTANCE
     prompt.RequiresLineOfSight   = false
     prompt.HoldDuration          = 0
+    prompt.Style                 = Enum.ProximityPromptStyle.Custom
+    prompt:SetAttribute("PromptKind", "Fishing")
     prompt.Parent                = primary
 
     local fish = {

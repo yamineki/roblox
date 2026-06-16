@@ -96,15 +96,6 @@ do
 	stroke(bl)
 	lbl("CoinsLabel", bl, "🪙 0", UDim2.fromScale(1,1), UDim2.new(0,0,0,0), C.Gold, true)
 
-	local tl = frame("TopLeft", g, UDim2.fromOffset(220,70), UDim2.new(0,10,0,10), C.PanelDark, 0.05, RADIUS)
-	stroke(tl)
-	lbl("ZoneLabel",  tl, "Sunny Reef", UDim2.new(1,0,0.5,0), UDim2.new(0,0,0,0),   C.Text, true)
-	lbl("DepthLabel", tl, "0 – 100 м",  UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), C.TextDim, false)
-
-	local br = frame("BottomRight", g, UDim2.fromOffset(200,50), UDim2.new(1,-210,1,-60), C.PanelDark, 0.05, RADIUS)
-	stroke(br)
-	lbl("RodLabel", br, "🎣 Wooden Rod", UDim2.fromScale(1,1), UDim2.new(0,0,0,0), C.Text, true)
-
 	-- HUD-кнопки: квадратные тёмные плитки
 	local dailyBtn = btn("DailyBtn", g, "🗓", UDim2.fromOffset(44,44), UDim2.new(1,-58,0,10), C.PanelDark)
 	dailyBtn.TextScaled = true
@@ -140,8 +131,8 @@ do
 	glowStroke.Name = "GlowStroke"
 	-- Разделитель в центре
 	frame("CenterLine", sliderBG, UDim2.fromOffset(2,58), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
-	lbl("HintLabel", hp, "Нажми [E] когда курсор в зелёной зоне!", UDim2.fromOffset(480,36), UDim2.new(0.5,-240,0.5,46), C.Text, true)
-	local zoneLabel = lbl("ZoneLabel", hp, "🎣  ПОДСЕЧКА!", UDim2.fromOffset(340,54), UDim2.new(0.5,-170,0.5,-110), C.Text, true)
+	lbl("HintLabel", hp, "Click when the cursor is in the green zone!", UDim2.fromOffset(480,36), UDim2.new(0.5,-240,0.5,46), C.Text, true)
+	local zoneLabel = lbl("ZoneLabel", hp, "🎣  CAST!", UDim2.fromOffset(340,54), UDim2.new(0.5,-170,0.5,-110), C.Text, true)
 	zoneLabel.TextStrokeTransparency = 0.5
 
 	-- Catch Phase
@@ -164,12 +155,12 @@ do
 	fillGrad.Color = ColorSequence.new(C.Green, Color3.fromRGB(160,255,180))
 	fillGrad.Rotation = 90
 	fillGrad.Parent = fill
-	local sl = lbl("StressLabel", cp, "⚠ Рыба злится!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.15,0), C.Red, true)
+	local sl = lbl("StressLabel", cp, "⚠ Fish is angry!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.15,0), C.Red, true)
 	sl.Visible = false
 	local pl = lbl("PerfectLabel", cp, "PERFECT CATCH!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.08,0), Color3.fromRGB(120,230,140), true)
 	pl.Visible = false
 	lbl("BehaviorLabel", cp, "Lazy", UDim2.fromOffset(200,30), UDim2.new(0.5,-100,0.22,0), C.TextDim, false)
-	local el = lbl("EscapeLabel", cp, "Рыба сбежала...", UDim2.fromOffset(400,50), UDim2.new(0.5,-200,0.45,0), C.Red, true)
+	local el = lbl("EscapeLabel", cp, "Fish got away...", UDim2.fromOffset(400,50), UDim2.new(0.5,-200,0.45,0), C.Red, true)
 	el.Visible = false
 
 	-- Слой эффектов (рябь/частицы), на весь экран, поверх остального
@@ -244,7 +235,7 @@ do
 	panel.AnchorPoint = Vector2.new(0.5,0.5)
 	stroke(panel)
 	titleBar(panel, 44)
-	lbl("Title", panel, "🎣 Магазин удочек", UDim2.new(0.7,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
+	lbl("Title", panel, "🎣 Rod Shop", UDim2.new(0.7,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
 	local coinsLbl = lbl("ShopCoinsLabel", panel, "🪙 ---", UDim2.new(0.28,0,0,44), UDim2.new(0.72,0,0,0), C.Gold, true, 16)
 	coinsLbl.TextXAlignment = Enum.TextXAlignment.Right
 	local grid = Instance.new("ScrollingFrame"); grid.Name = "RodGrid"
@@ -254,7 +245,7 @@ do
 	grid.CanvasSize = UDim2.new(0,0,0,0); grid.Parent = panel
 	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.new(0.48,0,0,120)
 	gl.CellPadding = UDim2.new(0.02,0,0,12); gl.SortOrder = Enum.SortOrder.LayoutOrder; gl.Parent = grid
-	local cb = btn("CloseButton", panel, "✕ Закрыть", UDim2.new(0.3,0,0,40), UDim2.new(0.35,0,1,-48), C.Btn, C.Text, 15)
+	local cb = btn("CloseButton", panel, "✕ Close", UDim2.new(0.3,0,0,40), UDim2.new(0.35,0,1,-48), C.Btn, C.Text, 15)
 	corner(cb, RADIUS); stroke(cb)
 end
 
@@ -275,10 +266,10 @@ do
 	frame("Header", panel, UDim2.new(1,0,0,44), UDim2.new(0,0,0,0), C.TitleBar, 0, 6)
 	frame("HeaderFill", panel:FindFirstChild("Header"), UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), C.TitleBar, 0)
 
-	lbl("Title", panel, "🗓  ЕЖЕДНЕВНЫЕ НАГРАДЫ", UDim2.new(1,-80,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
+	lbl("Title", panel, "🗓  DAILY REWARDS", UDim2.new(1,-80,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
 	local closeBtn = btn("CloseBtn", panel, "✕", UDim2.fromOffset(32,32), UDim2.new(1,-40,0,6), C.Btn, C.Text, 16)
 	corner(closeBtn, RADIUS); stroke(closeBtn)
-	local sl = lbl("StreakLabel", panel, "Серия: 0 дней", UDim2.new(1,-20,0,28), UDim2.new(0,10,0,50), C.Gold, false, 15)
+	local sl = lbl("StreakLabel", panel, "Streak: 0 days", UDim2.new(1,-20,0,28), UDim2.new(0,10,0,50), C.Gold, false, 15)
 	sl.TextXAlignment = Enum.TextXAlignment.Left
 	local tl = lbl("TimerLabel", panel, "", UDim2.new(0.5,0,0,28), UDim2.new(0.5,0,0,50), C.TextDim, false, 14)
 	tl.AnchorPoint = Vector2.new(0.5,0); tl.TextXAlignment = Enum.TextXAlignment.Center
@@ -290,8 +281,8 @@ do
 	}
 	local EMOJIS = {"🪙","🍀","✨","⏱","📦","🐠","🌟"}
 	local TITLES = {
-		"🪙 500 монет", "🍀 Удача ×1.5\n30 мин", "✨ Мутации ×2\n30 мин",
-		"⏱ AFK билет ×1","📦 Сундук ×3","🐠 Rare+ сундук","🌟 Особая мутация"
+		"🪙 500 coins", "🍀 Luck ×1.5\n30 min", "✨ Mutations ×2\n30 min",
+		"⏱ AFK ticket ×1","📦 Chest ×3","🐠 Rare+ chest","🌟 Special mutation"
 	}
 	local CARD_W, CARD_H, CARD_GAP = 90, 250, 10
 	local startX = (760 - 7*CARD_W - 6*CARD_GAP) / 2
@@ -303,7 +294,7 @@ do
 		local cs = stroke(card, C.Stroke, 1, 0); cs.Name = "CardStroke"
 		local gs = stroke(card, Color3.fromRGB(235,235,235), 2, 1); gs.Name = "GlowStroke"
 
-		lbl("DayNum", card, "День "..day, UDim2.new(1,0,0,22), UDim2.new(0,0,0,6), C.TextDim, false, 12)
+		lbl("DayNum", card, "Day "..day, UDim2.new(1,0,0,22), UDim2.new(0,0,0,6), C.TextDim, false, 12)
 
 		local ic = frame("IconContainer", card, UDim2.fromOffset(68,68), UDim2.new(0.5,-34,0,32), TINTS[day], 0.82, RADIUS)
 		stroke(ic, C.Stroke, 1, 0.3)
@@ -321,14 +312,14 @@ do
 	end
 
 	-- Кнопка "Забрать"
-	local cb = btn("ClaimButton", panel, "🎁  Забрать награду", UDim2.fromOffset(240,50), UDim2.new(0.5,-120,1,-66), C.BtnGreen, C.Text, 18)
+	local cb = btn("ClaimButton", panel, "🎁  Claim Reward", UDim2.fromOffset(240,50), UDim2.new(0.5,-120,1,-66), C.BtnGreen, C.Text, 18)
 	corner(cb, RADIUS); stroke(cb)
 
 	-- Попап результата (дочерний ScreenGui, не Panel)
 	local rp = frame("ResultPopup", g, UDim2.fromOffset(320,110), UDim2.new(0.5,-160,0.5,-55), C.PanelBG, 0.05, 6)
 	rp.Visible = false; rp.ZIndex = 10
 	stroke(rp)
-	lbl("ResultTitle", rp, "🎉 Награда получена!", UDim2.new(1,0,0,40), UDim2.new(0,0,0,8), C.Text, true, 18)
+	lbl("ResultTitle", rp, "🎉 Reward claimed!", UDim2.new(1,0,0,40), UDim2.new(0,0,0,8), C.Text, true, 18)
 	lbl("ResultBody",  rp, "", UDim2.new(1,-20,0,50), UDim2.new(0,10,0,50), C.TextDim, false, 15)
 end
 
@@ -345,12 +336,12 @@ do
 	panel.AnchorPoint = Vector2.new(0.5,0.5)
 	stroke(panel)
 	titleBar(panel, 44)
-	lbl("Title", panel, "🌀 Путешествие по зонам", UDim2.new(1,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
+	lbl("Title", panel, "🌀 Zone Travel", UDim2.new(1,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
 
 	local list = frame("List", panel, UDim2.new(1,-32,1,-114), UDim2.fromOffset(16,54), Color3.new(0,0,0), 1)
 	local ul = Instance.new("UIListLayout"); ul.Padding = UDim.new(0,8); ul.SortOrder = Enum.SortOrder.LayoutOrder; ul.Parent = list
 
-	local cb = btn("CloseBtn", panel, "✕ Закрыть", UDim2.fromOffset(200,40), UDim2.new(0.5,0,1,-50), C.Btn, C.Text, 15)
+	local cb = btn("CloseBtn", panel, "✕ Close", UDim2.fromOffset(200,40), UDim2.new(0.5,0,1,-50), C.Btn, C.Text, 15)
 	cb.AnchorPoint = Vector2.new(0.5,0); corner(cb, RADIUS); stroke(cb)
 end
 
@@ -367,12 +358,12 @@ do
 	panel.AnchorPoint = Vector2.new(0.5,0.5)
 	stroke(panel)
 	titleBar(panel, 44)
-	lbl("Title", panel, "💎 Магазин", UDim2.new(1,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
+	lbl("Title", panel, "💎 Shop", UDim2.new(1,0,0,44), UDim2.new(0,0,0,0), C.Text, true, 18)
 
 	local tabRow = frame("TabRow", panel, UDim2.new(1,-32,0,36), UDim2.fromOffset(16,52), Color3.new(0,0,0), 1)
-	local tgp = btn("TabGP", tabRow, "Геймпассы", UDim2.fromOffset(150,36), UDim2.new(0,0,0,0), C.Btn, C.Text, 14)
+	local tgp = btn("TabGP", tabRow, "Game Passes", UDim2.fromOffset(150,36), UDim2.new(0,0,0,0), C.Btn, C.Text, 14)
 	corner(tgp, RADIUS); stroke(tgp)
-	local tprod = btn("TabProd", tabRow, "Монеты и бусты", UDim2.fromOffset(150,36), UDim2.fromOffset(158,0), C.Btn, C.Text, 14)
+	local tprod = btn("TabProd", tabRow, "Coins & Boosts", UDim2.fromOffset(150,36), UDim2.fromOffset(158,0), C.Btn, C.Text, 14)
 	corner(tprod, RADIUS); stroke(tprod)
 
 	local scroll = Instance.new("ScrollingFrame"); scroll.Name = "Items"
@@ -383,7 +374,7 @@ do
 	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.fromOffset(290,92)
 	gl.CellPadding = UDim2.fromOffset(12,12); gl.SortOrder = Enum.SortOrder.LayoutOrder; gl.Parent = scroll
 
-	local cb = btn("CloseBtn", panel, "✕ Закрыть", UDim2.fromOffset(200,40), UDim2.new(0.5,0,1,-48), C.Btn, C.Text, 15)
+	local cb = btn("CloseBtn", panel, "✕ Close", UDim2.fromOffset(200,40), UDim2.new(0.5,0,1,-48), C.Btn, C.Text, 15)
 	cb.AnchorPoint = Vector2.new(0.5,0); corner(cb, RADIUS); stroke(cb)
 end
 
@@ -450,8 +441,8 @@ do
 	stroke(fp)
 
 	local fh = frame("Header", fp, UDim2.new(1,0,0,52), UDim2.new(0,0,0,0), C.TitleBar, 0, RADIUS)
-	lbl("FishCount", fh, "0 рыб", UDim2.new(0.45,0,1,0), UDim2.new(0.5,0,0,0), C.Text, false, 13)
-	local sh = lbl("SellHint", fh, "💬 Продай у Fish Merchant", UDim2.new(0.45,-10,1,0), UDim2.new(0.55,0,0,0), C.TextDim, false, 11)
+	lbl("FishCount", fh, "0 fish", UDim2.new(0.45,0,1,0), UDim2.new(0.5,0,0,0), C.Text, false, 13)
+	local sh = lbl("SellHint", fh, "💬 Sell at Fish Merchant", UDim2.new(0.45,-10,1,0), UDim2.new(0.55,0,0,0), C.TextDim, false, 11)
 	sh.TextXAlignment = Enum.TextXAlignment.Right
 
 	local fgW = FCOLS*(FSS+SG)+SG  -- 448
@@ -474,29 +465,29 @@ do
 	local dp = frame("DetailPanel", fp, UDim2.fromOffset(dpW-8, fgH-8), UDim2.fromOffset(fgW+4, 56), C.PanelDark, 0, RADIUS)
 	stroke(dp)
 
-	local iconSize = dpW - 40
-	local dIcon = img("Icon", dp, UDim2.fromOffset(iconSize, iconSize), UDim2.new(0.5,0,0,16))
+	local iconSize = 72  -- fixed smaller size so rows fit without overflow
+	local dIcon = img("Icon", dp, UDim2.fromOffset(iconSize, iconSize), UDim2.new(0.5,0,0,10))
 	dIcon.AnchorPoint = Vector2.new(0.5,0)
-	local dPlaceholder = frame("IconPlaceholder", dp, UDim2.fromOffset(iconSize,iconSize), UDim2.new(0.5,0,0,16), Color3.fromRGB(44,46,53), 0.1, RADIUS)
+	local dPlaceholder = frame("IconPlaceholder", dp, UDim2.fromOffset(iconSize,iconSize), UDim2.new(0.5,0,0,10), Color3.fromRGB(44,46,53), 0.1, RADIUS)
 	dPlaceholder.AnchorPoint = Vector2.new(0.5,0)
 	lbl("PlaceholderText", dPlaceholder, "🐟", UDim2.fromScale(1,1), UDim2.new(0,0,0,0), C.Text, true)
 
-	local rowY = iconSize + 20
+	local rowY = iconSize + 16  -- 88 — fits 6 rows × 24px = 144px, total 232 < panel height 272
 	local ROW_DEFS = {
-		{"RowName",     "Имя",      C.Text},
-		{"RowRarity",   "Редкость", C.Text},
-		{"RowSize",     "Размер",   C.Text},
-		{"RowMutation", "Мутация",  Color3.fromRGB(200,140,230)},
-		{"RowValue",    "Цена",     C.Gold},
-		{"RowZone",     "Зона",     C.TextDim},
+		{"RowName",     "Name",     C.Text},
+		{"RowRarity",   "Rarity",   C.Text},
+		{"RowSize",     "Size",     C.Text},
+		{"RowMutation", "Mutation", Color3.fromRGB(200,140,230)},
+		{"RowValue",    "Value",    C.Gold},
+		{"RowZone",     "Zone",     C.TextDim},
 	}
 	for ri, rd in ipairs(ROW_DEFS) do
-		local row = frame(rd[1], dp, UDim2.new(1,-16,0,22), UDim2.fromOffset(8, rowY + (ri-1)*26), Color3.new(0,0,0), 1)
-		lbl("Label", row, rd[2], UDim2.fromScale(0.45,1), UDim2.new(0,0,0,0), C.TextDim, false, 12)
-		local vl = lbl("Value", row, "—", UDim2.fromScale(0.55,1), UDim2.fromScale(0.45,0), rd[3], true, 12)
+		local row = frame(rd[1], dp, UDim2.new(1,-16,0,20), UDim2.fromOffset(8, rowY + (ri-1)*24), Color3.new(0,0,0), 1)
+		lbl("Label", row, rd[2], UDim2.fromScale(0.45,1), UDim2.new(0,0,0,0), C.TextDim, false, 11)
+		local vl = lbl("Value", row, "—", UDim2.fromScale(0.55,1), UDim2.fromScale(0.45,0), rd[3], true, 11)
 		vl.TextXAlignment = Enum.TextXAlignment.Right
 	end
-	local dph = lbl("Placeholder", dp, "Выбери рыбу\nчтобы увидеть детали", UDim2.fromScale(1,0.3), UDim2.fromScale(0,0.35), C.TextDim, false, 13)
+	local dph = lbl("Placeholder", dp, "Select a fish\nto see details", UDim2.fromScale(1,0.3), UDim2.fromScale(0,0.35), C.TextDim, false, 12)
 	dph.TextWrapped = true
 end
 
@@ -529,37 +520,34 @@ do
 	dialogText.TextYAlignment = Enum.TextYAlignment.Top
 	dialogText.TextScaled = false
 
+	-- Transparent click-to-advance area covering the whole panel (sits behind portrait/text)
+	-- ClickArea intercepts clicks on panel so they advance dialog instead of leaking to Dim
+	local ca = btn("ClickArea", panel, "", UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0))
+	ca.BackgroundTransparency = 1; ca.ZIndex = 1
+
 	-- Choices row (bottom-right of panel)
 	local choicesRow = frame("ChoicesRow", panel, UDim2.new(1,-190,0,40), UDim2.new(0,180,1,-55), Color3.new(0,0,0), 1)
-	local c1 = btn("Choice1", choicesRow, "Да!", UDim2.new(0.48,0,1,0), UDim2.new(0,0,0,0), C.BtnGreen, C.Text, 15)
+	local c1 = btn("Choice1", choicesRow, "Yes!", UDim2.new(0.48,0,1,0), UDim2.new(0,0,0,0), C.BtnGreen, C.Text, 15)
 	corner(c1, RADIUS); stroke(c1)
-	local c2 = btn("Choice2", choicesRow, "Может позже", UDim2.new(0.48,0,1,0), UDim2.new(0.52,0,0,0), C.Btn, C.Text, 15)
+	local c2 = btn("Choice2", choicesRow, "Maybe later", UDim2.new(0.48,0,1,0), UDim2.new(0.52,0,0,0), C.Btn, C.Text, 15)
 	corner(c2, RADIUS); stroke(c2)
 	choicesRow.Visible = false
 end
 
--- ══════════════════════════════════════════════════════════════
---  13. TEST BUTTONS (Dev panel)
--- ══════════════════════════════════════════════════════════════
+-- Remove leftover TestButtons GUI if it exists
 do
-	local g = scrGui("TestButtons", 200)
-	local p = frame("TestPanel", g, UDim2.fromOffset(160,130), UDim2.new(1,-170,0,90), C.PanelDark, 0.1, RADIUS)
-	stroke(p)
-	lbl("TestLabel", p, "⚙ TEST", UDim2.new(1,0,0.22,0), UDim2.new(0,0,0,4), C.TextDim, true)
-	local ob = btn("OpenShop", p, "Магазин", UDim2.new(0.9,0,0.3,0), UDim2.new(0.05,0,0.28,0), C.Btn, C.Text, 13)
-	corner(ob, RADIUS)
-	local closeb = btn("CloseShop", p, "Закрыть", UDim2.new(0.9,0,0.3,0), UDim2.new(0.05,0,0.62,0), C.Btn, C.Text, 13)
-	corner(closeb, RADIUS)
+	local old = StarterGui:FindFirstChild("TestButtons")
+	if old then old:Destroy() end
 end
 
 -- ══════════════════════════════════════════════════════════════
-print("✅ ReefDiver UIBuilder завершён!")
-print("   Создано GUI в StarterGui:")
+print("✅ ReefDiver UIBuilder complete!")
+print("   GUIs in StarterGui:")
 local names = {"MainHUD","FishingGui","EventBanner","AnnounceBanner","ComboDisplay",
 	"ShopGui","DailyRewardGui","ZoneMenu","MonetizationShop","BoostIndicator",
-	"ReefDiverInventory","NPCDialogGui","TestButtons"}
+	"ReefDiverInventory","NPCDialogGui"}
 for _, n in ipairs(names) do
 	local exists = StarterGui:FindFirstChild(n) ~= nil
 	print("   " .. (exists and "✓" or "✗") .. " " .. n)
 end
-print("   Ищи ImageLabel с Image=\"\" — туда загружай свои картинки (rbxassetid://...)")
+print("   Find ImageLabel with Image=\"\" and upload your images (rbxassetid://...)")
