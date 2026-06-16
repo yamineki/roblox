@@ -40,20 +40,21 @@ local ownedCache = {}
 local function makeCard(cfg, key, isOwned, isProduct, order)
     local card = Instance.new("Frame")
     card.Name = key
-    card.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+    card.BackgroundColor3 = Color3.fromRGB(245, 248, 255)
     card.BorderSizePixel = 0
     card.LayoutOrder = order
     card.Parent = scroll
-    corner(card, 4)
-    stroke(card, isOwned and Color3.fromRGB(70, 160, 90) or Color3.fromRGB(70, 75, 85), 1)
+    corner(card, 8)
+    stroke(card, isOwned and Color3.fromRGB(50,175,100) or Color3.fromRGB(210,220,235), 1.5)
 
     local iconHolder = Instance.new("Frame")
-    iconHolder.Size = UDim2.fromOffset(56, 56)
+    iconHolder.Size = UDim2.fromOffset(54, 54)
     iconHolder.Position = UDim2.fromOffset(10, 10)
-    iconHolder.BackgroundColor3 = Color3.fromRGB(44, 46, 53)
+    iconHolder.BackgroundColor3 = Color3.fromRGB(125, 70, 195)
+    iconHolder.BackgroundTransparency = 0.2
     iconHolder.BorderSizePixel = 0
     iconHolder.Parent = card
-    corner(iconHolder, 4)
+    corner(iconHolder, 8)
 
     local iconImg = Instance.new("ImageLabel")
     iconImg.Size = UDim2.fromScale(1,1)
@@ -67,28 +68,29 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
         ph.Text = isProduct and "🪙" or "🎁"
         ph.TextScaled = true
         ph.Font = Enum.Font.GothamBold
+        ph.TextColor3 = Color3.new(1,1,1)
         ph.Parent = iconHolder
     end
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.fromOffset(150, 22)
-    nameLabel.Position = UDim2.fromOffset(76, 10)
+    nameLabel.Position = UDim2.fromOffset(72, 8)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = cfg.displayName
-    nameLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
+    nameLabel.TextColor3 = Color3.fromRGB(30, 35, 50)
     nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 15
+    nameLabel.TextSize = 14
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     nameLabel.Parent = card
 
     if cfg.description then
         local desc = Instance.new("TextLabel")
-        desc.Size = UDim2.fromOffset(204, 30)
-        desc.Position = UDim2.fromOffset(76, 32)
+        desc.Size = UDim2.fromOffset(204, 28)
+        desc.Position = UDim2.fromOffset(72, 30)
         desc.BackgroundTransparency = 1
         desc.Text = cfg.description
-        desc.TextColor3 = Color3.fromRGB(160, 165, 175)
+        desc.TextColor3 = Color3.fromRGB(100, 110, 135)
         desc.Font = Enum.Font.Gotham
         desc.TextSize = 11
         desc.TextXAlignment = Enum.TextXAlignment.Left
@@ -98,26 +100,26 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     end
 
     local buyBtn = Instance.new("TextButton")
-    buyBtn.Size = UDim2.fromOffset(200, 24)
-    buyBtn.Position = UDim2.fromOffset(76, 62)
+    buyBtn.Size = UDim2.fromOffset(200, 26)
+    buyBtn.Position = UDim2.fromOffset(72, 60)
     buyBtn.Font = Enum.Font.GothamBold
     buyBtn.TextSize = 13
-    buyBtn.TextColor3 = Color3.fromRGB(235, 235, 235)
+    buyBtn.TextColor3 = Color3.new(1,1,1)
     buyBtn.BorderSizePixel = 0
     buyBtn.Parent = card
-    corner(buyBtn, 4)
+    corner(buyBtn, 8)
 
     if isOwned then
         buyBtn.Text = "✓ Owned"
-        buyBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(50, 175, 100)
         buyBtn.Active = false
     elseif cfg.id == 0 then
         buyBtn.Text = "Coming soon"
-        buyBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(170, 175, 190)
         buyBtn.Active = false
     else
         buyBtn.Text = "R$ " .. (cfg.priceRobux or "?")
-        buyBtn.BackgroundColor3 = Color3.fromRGB(70, 160, 90)
+        buyBtn.BackgroundColor3 = Color3.fromRGB(125, 70, 195)
         buyBtn.MouseButton1Click:Connect(function()
             SoundFX.Play("Purchase")
             if isProduct then
@@ -153,14 +155,12 @@ local function rebuild()
         scroll.CanvasSize = UDim2.fromOffset(0, rows * 104 + 12)
     end
 
-    local ACTIVE_TAB   = Color3.fromRGB(70, 75, 85)
-    local INACTIVE_TAB = Color3.fromRGB(50, 52, 60)
+    local ACTIVE_TAB   = Color3.fromRGB(125, 70, 195)
+    local INACTIVE_TAB = Color3.fromRGB(80, 50, 120)
     tabGamePasses.BackgroundColor3 = currentTab == "gamepasses" and ACTIVE_TAB or INACTIVE_TAB
-    tabGamePasses.TextColor3 = currentTab == "gamepasses"
-        and Color3.fromRGB(235, 235, 235) or Color3.fromRGB(160, 165, 175)
+    tabGamePasses.TextColor3 = Color3.new(1,1,1)
     tabProducts.BackgroundColor3 = currentTab == "products" and ACTIVE_TAB or INACTIVE_TAB
-    tabProducts.TextColor3 = currentTab == "products"
-        and Color3.fromRGB(235, 235, 235) or Color3.fromRGB(160, 165, 175)
+    tabProducts.TextColor3 = Color3.new(1,1,1)
 end
 
 tabGamePasses.MouseButton1Click:Connect(function()

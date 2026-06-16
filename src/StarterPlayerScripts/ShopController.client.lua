@@ -57,17 +57,17 @@ local function rebuildRodGrid()
         local card = Instance.new("Frame")
         card.Name = rodId
         card.Size = UDim2.new(0.48, 0, 0, 120)
-        card.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+        card.BackgroundColor3 = Color3.fromRGB(245, 248, 255)
         card.BorderSizePixel = 0
         card.Parent = grid
 
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 4)
-        corner.Parent = card
+        local cardCorner = Instance.new("UICorner")
+        cardCorner.CornerRadius = UDim.new(0, 8)
+        cardCorner.Parent = card
 
         local cardStroke = Instance.new("UIStroke")
-        cardStroke.Color = Color3.fromRGB(70, 75, 85)
-        cardStroke.Thickness = 1
+        cardStroke.Color = Color3.fromRGB(210, 220, 235)
+        cardStroke.Thickness = 1.5
         cardStroke.Parent = card
 
         local nameLabel = Instance.new("TextLabel")
@@ -75,7 +75,7 @@ local function rebuildRodGrid()
         nameLabel.Text = rod.displayName
         nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
+        nameLabel.TextColor3 = Color3.fromRGB(30, 35, 50)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextScaled = true
         nameLabel.Parent = card
@@ -86,7 +86,7 @@ local function rebuildRodGrid()
         bonusLabel.Size = UDim2.new(1, -8, 0.35, 0)
         bonusLabel.Position = UDim2.new(0, 4, 0.25, 0)
         bonusLabel.BackgroundTransparency = 1
-        bonusLabel.TextColor3 = Color3.fromRGB(160, 165, 175)
+        bonusLabel.TextColor3 = Color3.fromRGB(100, 110, 135)
         bonusLabel.Font = Enum.Font.Gotham
         bonusLabel.TextScaled = true
         bonusLabel.TextWrapped = true
@@ -99,28 +99,27 @@ local function rebuildRodGrid()
 
         local actionButton = Instance.new("TextButton")
         actionButton.Name = "ActionButton"
-        actionButton.Size = UDim2.new(0.8, 0, 0.3, 0)
-        actionButton.Position = UDim2.new(0.1, 0, 0.65, 0)
+        actionButton.Size = UDim2.new(0.8, 0, 0.28, 0)
+        actionButton.Position = UDim2.new(0.1, 0, 0.68, 0)
         actionButton.Font = Enum.Font.GothamBold
         actionButton.TextScaled = true
         actionButton.BorderSizePixel = 0
+        actionButton.TextColor3 = Color3.new(1,1,1)
         actionButton.Parent = card
         local abCorner = Instance.new("UICorner")
-        abCorner.CornerRadius = UDim.new(0, 4)
+        abCorner.CornerRadius = UDim.new(0, 8)
         abCorner.Parent = actionButton
 
         if isOwned then
             actionButton.Text = "✓ Owned"
-            actionButton.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
-            actionButton.TextColor3 = Color3.fromRGB(160, 165, 175)
+            actionButton.BackgroundColor3 = Color3.fromRGB(50, 175, 100)
             actionButton.Active = false
         else
             local canAfford = (playerCoins >= rod.price)
             actionButton.Text = (canAfford and "🪙 " or "🔒 ") .. tostring(rod.price)
             actionButton.BackgroundColor3 = canAfford
-                and Color3.fromRGB(70, 160, 90)
-                or  Color3.fromRGB(50, 52, 60)
-            actionButton.TextColor3 = Color3.new(1,1,1)
+                and Color3.fromRGB(50, 175, 100)
+                or  Color3.fromRGB(170, 175, 190)
             actionButton.MouseButton1Click:Connect(function()
                 SoundFX.Play("Click")
                 BuyRod:FireServer(rodId)
