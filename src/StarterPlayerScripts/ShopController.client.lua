@@ -214,6 +214,7 @@ end
 
 -- Открытие магазина теперь происходит через NPCDialog после положительного
 -- выбора в диалоге (см. NPCDialog.client.lua + ShopBridge)
+ShopBridge.Register("RodShop", openShop)
 ShopBridge.OpenRodShop = openShop
 
 -- Временная кнопка для тестирования (можно убрать — NPC уже работают)

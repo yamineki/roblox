@@ -58,21 +58,21 @@ local DIALOG_CONFIG = {
             "Fresh catch always fetches a good price!",
             "Bring me your rarest finds — I pay top coin.",
         },
-        positiveChoice = "Got it!",
+        positiveChoice = "Sell fish!",
         negativeChoice = "Not right now",
-        action = function() end,
+        action = function() ShopBridge.OpenSellPanel() end,
     },
     ElderDiver = {
         name = "Elder Diver",
         icon = "🧙",
         lines = {
             "You've ventured far, young diver...",
-            "Rebirth will unlock new horizons, but there's no turning back.",
+            "Rebirth will reset your progress but make you permanently stronger.",
             "Think carefully before you decide.",
         },
         positiveChoice = "Rebirth!",
         negativeChoice = "Not yet",
-        action = function() ShopBridge.OpenMonetizationShop() end,
+        action = function() ShopBridge.OpenRebirth() end,
     },
     ResearchSubmarine = {
         name = "Research Sub",
@@ -83,7 +83,7 @@ local DIALOG_CONFIG = {
         },
         positiveChoice = "Set sail!",
         negativeChoice = "Not now",
-        action = function() end,
+        action = function() ShopBridge.OpenExpedition() end,
     },
     Collector = {
         name = "Collector",
@@ -94,7 +94,7 @@ local DIALOG_CONFIG = {
         },
         positiveChoice = "Show me!",
         negativeChoice = "Later",
-        action = function() end,
+        action = function() ShopBridge.OpenFishDex() end,
     },
 }
 

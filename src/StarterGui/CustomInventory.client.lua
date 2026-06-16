@@ -23,12 +23,12 @@ local Strings = require(ReplicatedStorage.Modules.Strings)
 local RodData = require(ReplicatedStorage.Modules.RodData)
 
 -- ══ КОНСТАНТЫ (должны совпадать с UIBuilder.lua) ══
-local SLOT_SIZE        = 70
-local SLOT_GAP         = 8
-local SLOT_PADDING     = 10
+local SLOT_SIZE        = 60
+local SLOT_GAP         = 6
+local SLOT_PADDING     = 8
 local HOTBAR_ROD_COUNT = 5
 local ANIM_TIME        = 0.25
-local FISH_SLOT_SIZE   = 80
+local FISH_SLOT_SIZE   = 66
 local FISH_COLS        = 5
 local FISH_ROWS_VIS    = 3
 

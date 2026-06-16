@@ -205,6 +205,7 @@ task.spawn(function()
     end
 end)
 
+ShopBridge.Register("MonetizationShop", open)
 ShopBridge.OpenMonetizationShop = open
 
 print("[ReefDiver] MonetizationShop инициализирован ✓")

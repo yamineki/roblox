@@ -251,10 +251,18 @@ local function spawnFish(z, index)
         model:SetAttribute("BigCatch", true)
 
         local light = Instance.new("PointLight")
-        light.Brightness = 0.6
-        light.Range      = 7
-        light.Color      = Color3.fromRGB(180, 200, 255)
+        light.Brightness = 1.2
+        light.Range      = 10
+        light.Color      = Color3.fromRGB(255, 210, 80)
         light.Parent     = model.PrimaryPart
+
+        -- Highlight виден всем клиентам без LocalScript (replicated)
+        local hl = Instance.new("Highlight")
+        hl.FillColor           = Color3.fromRGB(255, 200, 50)
+        hl.FillTransparency    = 0.55
+        hl.OutlineColor        = Color3.fromRGB(255, 220, 80)
+        hl.OutlineTransparency = 0
+        hl.Parent              = model
     end
 
     local startPos = randomPosInZone(z)

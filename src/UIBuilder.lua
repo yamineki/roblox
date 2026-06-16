@@ -399,9 +399,9 @@ do
 	local mf = frame("MainFrame", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 1)
 
 	-- Константы (должны совпадать с CustomInventory.client.lua)
-	local SS, SG, SP, HRC = 70, 8, 10, 5
-	local hotbarW = SP*2 + HRC*SS + (HRC-1)*SG  -- 402
-	local hotbarH = SP*2 + SS                    -- 90
+	local SS, SG, SP, HRC = 60, 6, 8, 5
+	local hotbarW = SP*2 + HRC*SS + (HRC-1)*SG  -- 356
+	local hotbarH = SP*2 + SS                    -- 76
 
 	local hbg = frame("HotbarBG", mf, UDim2.fromOffset(hotbarW, hotbarH),
 		UDim2.new(0.5, -hotbarW/2, 1, -(hotbarH+12)), C.PanelDark, 0.05, RADIUS)
@@ -429,10 +429,10 @@ do
 	corner(fbtn, RADIUS); stroke(fbtn)
 
 	-- Fish Panel
-	local FSS = 80
+	local FSS = 66
 	local FCOLS, FROWS = 5, 3
-	local fpW = FCOLS*(FSS+SG)+SG + 220  -- 668
-	local fpH = FROWS*(FSS+SG)+SG + 60   -- 332
+	local fpW = FCOLS*(FSS+SG)+SG + 200  -- smaller
+	local fpH = FROWS*(FSS+SG)+SG + 52
 	local fpCloseY = -(hotbarH+8)
 
 	local fp = frame("FishPanel", mf, UDim2.fromOffset(fpW,fpH),
@@ -534,6 +534,156 @@ do
 	choicesRow.Visible = false
 end
 
+-- ══════════════════════════════════════════════════════════════
+--  13. SELL PANEL
+-- ══════════════════════════════════════════════════════════════
+do
+	local AC = Color3.fromRGB(60,180,200)   -- teal accent
+	local g = scrGui("SellPanel", 140); g.Enabled = false
+
+	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
+	dim.BackgroundTransparency = 0.5; dim.AutoButtonColor = false
+
+	local panel = frame("Panel", g, UDim2.fromOffset(480,420), UDim2.new(0.5,0,0.5,0), AC, 0, 12)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, Color3.fromRGB(30,140,160), 2, 0)
+
+	local hdr = frame("Header", panel, UDim2.new(1,0,0,46), UDim2.new(), Color3.fromRGB(40,150,170), 0, 12)
+	frame("HdrFix", hdr, UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), Color3.fromRGB(40,150,170), 0)
+	lbl("Title", hdr, "🐟  Sell Fish", UDim2.new(0.8,0,1,0), UDim2.new(0,12,0,0), Color3.new(1,1,1), true, 20)
+	local cx = btn("CloseBtn", hdr, "✕", UDim2.fromOffset(34,34), UDim2.new(1,-40,0,6), Color3.fromRGB(200,70,70), Color3.new(1,1,1), 16)
+	corner(cx, 6)
+
+	local fl = Instance.new("ScrollingFrame"); fl.Name = "FishList"
+	fl.Size = UDim2.new(1,-16,1,-116); fl.Position = UDim2.fromOffset(8,54)
+	fl.BackgroundTransparency = 1; fl.BorderSizePixel = 0
+	fl.ScrollBarThickness = 4; fl.ScrollBarImageColor3 = Color3.fromRGB(30,140,160)
+	fl.CanvasSize = UDim2.new(0,0,0,0); fl.ScrollingDirection = Enum.ScrollingDirection.Y
+	fl.Parent = panel
+	local ul = Instance.new("UIListLayout"); ul.Padding = UDim.new(0,4)
+	ul.SortOrder = Enum.SortOrder.LayoutOrder; ul.Parent = fl
+
+	local sb = frame("SummaryBar", panel, UDim2.new(1,-16,0,52), UDim2.new(0,8,1,-60), Color3.fromRGB(30,150,170), 0, 8)
+	lbl("TotalValue", sb, "Total: 🪙 0", UDim2.fromScale(0.45,1), UDim2.new(), Color3.new(1,1,1), true, 15)
+	local ss = btn("SellSelected", sb, "✓ Sell Selected", UDim2.fromOffset(148,38), UDim2.fromOffset(2,7), Color3.fromRGB(70,190,100), Color3.new(1,1,1), 13)
+	corner(ss, 8)
+	local sa = btn("SellAll", sb, "⚡ Sell All", UDim2.fromOffset(110,38), UDim2.fromOffset(154,7), Color3.fromRGB(220,170,40), Color3.new(1,1,1), 13)
+	corner(sa, 8)
+end
+
+-- ══════════════════════════════════════════════════════════════
+--  14. EXPEDITION PANEL
+-- ══════════════════════════════════════════════════════════════
+do
+	local AC = Color3.fromRGB(70,110,220)
+	local g = scrGui("ExpeditionPanel", 141); g.Enabled = false
+
+	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
+	dim.BackgroundTransparency = 0.5; dim.AutoButtonColor = false
+
+	local panel = frame("Panel", g, UDim2.fromOffset(520,400), UDim2.new(0.5,0,0.5,0), AC, 0, 12)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, Color3.fromRGB(40,70,180), 2, 0)
+
+	local hdr = frame("Header", panel, UDim2.new(1,0,0,46), UDim2.new(), Color3.fromRGB(50,80,190), 0, 12)
+	frame("HdrFix", hdr, UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), Color3.fromRGB(50,80,190), 0)
+	lbl("Title", hdr, "🚤  Expeditions", UDim2.new(0.8,0,1,0), UDim2.new(0,12,0,0), Color3.new(1,1,1), true, 20)
+	local cx = btn("CloseBtn", hdr, "✕", UDim2.fromOffset(34,34), UDim2.new(1,-40,0,6), Color3.fromRGB(200,70,70), Color3.new(1,1,1), 16)
+	corner(cx, 6)
+
+	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,54), Color3.new(0,0,0), 1)
+	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.new(0.48,0,0.48,0)
+	gl.CellPadding = UDim2.fromOffset(8,8); gl.SortOrder = Enum.SortOrder.LayoutOrder; gl.Parent = sc
+
+	for i = 1, 4 do
+		local sl = frame("Slot"..i, sc, UDim2.new(0,0,0,0), UDim2.new(), Color3.fromRGB(50,80,200), 0, 8)
+		stroke(sl, Color3.fromRGB(80,110,230), 1, 0.2)
+		lbl("SlotTitle", sl, "Expedition "..i, UDim2.new(1,-8,0,22), UDim2.fromOffset(4,4), Color3.new(1,1,1), true, 13)
+		lbl("SlotStatus", sl, "Ready", UDim2.new(1,-8,0,20), UDim2.new(0,4,0,26), Color3.fromRGB(180,220,255), false, 12)
+		local stb = btn("StartBtn", sl, "▶ Send", UDim2.new(0.46,0,0,28), UDim2.new(0,4,1,-32), Color3.fromRGB(70,190,100), Color3.new(1,1,1), 12)
+		corner(stb, 6)
+		local ctb = btn("CollectBtn", sl, "⬇ Collect", UDim2.new(0.46,0,0,28), UDim2.new(0.54,0,1,-32), Color3.fromRGB(220,170,40), Color3.new(1,1,1), 12)
+		corner(ctb, 6); ctb.Visible = false
+	end
+
+	lbl("TimerLabel", panel, "", UDim2.new(1,-16,0,32), UDim2.new(0,8,1,-44), Color3.fromRGB(180,200,255), false, 14)
+end
+
+-- ══════════════════════════════════════════════════════════════
+--  15. REBIRTH PANEL
+-- ══════════════════════════════════════════════════════════════
+do
+	local AC = Color3.fromRGB(130,70,200)
+	local g = scrGui("RebirthPanel", 142); g.Enabled = false
+
+	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
+	dim.BackgroundTransparency = 0.5; dim.AutoButtonColor = false
+
+	local panel = frame("Panel", g, UDim2.fromOffset(460,340), UDim2.new(0.5,0,0.5,0), AC, 0, 12)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, Color3.fromRGB(90,40,160), 2, 0)
+
+	local hdr = frame("Header", panel, UDim2.new(1,0,0,46), UDim2.new(), Color3.fromRGB(100,40,170), 0, 12)
+	frame("HdrFix", hdr, UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), Color3.fromRGB(100,40,170), 0)
+	lbl("Title", hdr, "🌀  Rebirth", UDim2.new(0.8,0,1,0), UDim2.new(0,12,0,0), Color3.new(1,1,1), true, 20)
+	local cx = btn("CloseBtn", hdr, "✕", UDim2.fromOffset(34,34), UDim2.new(1,-40,0,6), Color3.fromRGB(200,70,70), Color3.new(1,1,1), 16)
+	corner(cx, 6)
+
+	local desc = lbl("RebirthDesc", panel,
+		"Reset your progress and start again — but this time you'll be stronger.\nEach rebirth multiplies your fish value permanently.",
+		UDim2.new(1,-24,0,52), UDim2.fromOffset(12,54), Color3.fromRGB(220,200,255), false, 13)
+	desc.TextWrapped = true; desc.TextYAlignment = Enum.TextYAlignment.Top
+
+	local rs = frame("RebirthStats", panel, UDim2.new(1,-24,0,80), UDim2.fromOffset(12,112), Color3.fromRGB(100,50,180), 0.1, 8)
+	stroke(rs, Color3.fromRGB(160,100,230), 1, 0.3)
+	local statNames = {"CurrentCoins","TotalCatch","RebirthCount"}
+	local statLabels = {"🪙 Coins","🐟 Total Caught","🌀 Rebirths"}
+	for i, sn in ipairs(statNames) do
+		local row = frame(sn, rs, UDim2.new(1,-8,0,22), UDim2.fromOffset(4,(i-1)*26+4), Color3.new(0,0,0), 1)
+		lbl("Label", row, statLabels[i], UDim2.fromScale(0.55,1), UDim2.new(), Color3.fromRGB(200,180,255), false, 12)
+		local v = lbl("Value", row, "—", UDim2.fromScale(0.45,1), UDim2.fromScale(0.55,0), Color3.new(1,1,1), true, 12)
+		v.TextXAlignment = Enum.TextXAlignment.Right
+	end
+
+	local rb = btn("ConfirmRebirth", panel, "⚡ Rebirth Now!", UDim2.fromOffset(220,46), UDim2.new(0.5,-110,1,-102), Color3.fromRGB(70,200,100), Color3.new(1,1,1), 17)
+	corner(rb, 10); stroke(rb, Color3.fromRGB(40,160,70), 2, 0)
+	local cb = btn("CancelBtn", panel, "Cancel", UDim2.fromOffset(120,36), UDim2.new(0.5,-60,1,-50), C.Btn, C.TextDim, 14)
+	corner(cb, 8)
+end
+
+-- ══════════════════════════════════════════════════════════════
+--  16. FISH DEX PANEL
+-- ══════════════════════════════════════════════════════════════
+do
+	local AC = Color3.fromRGB(30,60,120)
+	local g = scrGui("FishDexPanel", 143); g.Enabled = false
+
+	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
+	dim.BackgroundTransparency = 0.5; dim.AutoButtonColor = false
+
+	local panel = frame("Panel", g, UDim2.fromOffset(580,460), UDim2.new(0.5,0,0.5,0), AC, 0, 12)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, Color3.fromRGB(60,100,200), 2, 0)
+
+	local hdr = frame("Header", panel, UDim2.new(1,0,0,46), UDim2.new(), Color3.fromRGB(25,50,110), 0, 12)
+	frame("HdrFix", hdr, UDim2.new(1,0,0.5,0), UDim2.new(0,0,0.5,0), Color3.fromRGB(25,50,110), 0)
+	lbl("Title", hdr, "📖  Fish Collection", UDim2.new(0.7,0,1,0), UDim2.new(0,12,0,0), Color3.new(1,1,1), true, 20)
+	lbl("ProgressLabel", hdr, "0 / 0", UDim2.new(0.22,0,1,0), UDim2.new(0.72,0,0,0), Color3.fromRGB(180,200,255), true, 14)
+	local cx = btn("CloseBtn", hdr, "✕", UDim2.fromOffset(34,34), UDim2.new(1,-40,0,6), Color3.fromRGB(200,70,70), Color3.new(1,1,1), 16)
+	corner(cx, 6)
+
+	local pb = frame("ProgressBar", panel, UDim2.new(1,-16,0,14), UDim2.fromOffset(8,54), Color3.fromRGB(20,40,90), 0, 7)
+	local pbf = frame("Fill", pb, UDim2.new(0,0,1,0), UDim2.new(), Color3.fromRGB(80,160,255), 0, 7)
+	pbf.Name = "Fill"
+
+	local dg = Instance.new("ScrollingFrame"); dg.Name = "DexGrid"
+	dg.Size = UDim2.new(1,-16,1,-82); dg.Position = UDim2.fromOffset(8,76)
+	dg.BackgroundTransparency = 1; dg.BorderSizePixel = 0
+	dg.ScrollBarThickness = 4; dg.ScrollBarImageColor3 = Color3.fromRGB(80,120,200)
+	dg.CanvasSize = UDim2.new(0,0,0,0); dg.ScrollingDirection = Enum.ScrollingDirection.Y
+	dg.Parent = panel
+	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.fromOffset(120,100)
+	gl.CellPadding = UDim2.fromOffset(8,8); gl.SortOrder = Enum.SortOrder.LayoutOrder
+	gl.HorizontalAlignment = Enum.HorizontalAlignment.Left; gl.Parent = dg
+	local gp = Instance.new("UIPadding"); gp.PaddingLeft = UDim.new(0,8); gp.PaddingTop = UDim.new(0,8); gp.Parent = dg
+end
+
 -- Remove leftover TestButtons GUI if it exists
 do
 	local old = StarterGui:FindFirstChild("TestButtons")
@@ -545,7 +695,8 @@ print("✅ ReefDiver UIBuilder complete!")
 print("   GUIs in StarterGui:")
 local names = {"MainHUD","FishingGui","EventBanner","AnnounceBanner","ComboDisplay",
 	"ShopGui","DailyRewardGui","ZoneMenu","MonetizationShop","BoostIndicator",
-	"ReefDiverInventory","NPCDialogGui"}
+	"ReefDiverInventory","NPCDialogGui",
+	"SellPanel","ExpeditionPanel","RebirthPanel","FishDexPanel"}
 for _, n in ipairs(names) do
 	local exists = StarterGui:FindFirstChild(n) ~= nil
 	print("   " .. (exists and "✓" or "✗") .. " " .. n)

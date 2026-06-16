@@ -112,19 +112,23 @@ function startHookPhase()
         end
     end
 
-    -- "Тряска удочки" — лёгкое покачивание HookPhase для ощущения натяжения
+    -- "Тряска удочки" — лёгкое покачивание только SliderBG (не весь HookPhase)
     if rodShakeTween then
         rodShakeTween:Cancel()
         rodShakeTween = nil
     end
     if hookGui then
-        hookGui.Rotation = -1
-        rodShakeTween = TweenService:Create(
-            hookGui,
-            TweenInfo.new(0.12, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-            { Rotation = 1 }
-        )
-        rodShakeTween:Play()
+        hookGui.Rotation = 0  -- сброс ротации всего фрейма
+        local sliderBG = hookGui:FindFirstChild("SliderBG")
+        if sliderBG then
+            sliderBG.Rotation = -1
+            rodShakeTween = TweenService:Create(
+                sliderBG,
+                TweenInfo.new(0.14, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+                { Rotation = 1 }
+            )
+            rodShakeTween:Play()
+        end
     end
 
     playSound("CastRod")
@@ -265,6 +269,7 @@ function startCatchPhase()
 end
 
 function updateCatchPhase(dt)
+    dt = math.min(dt, 0.05)  -- cap dt to prevent lag spikes freezing green zone
     catchElapsed = catchElapsed + dt
 
     -- Stress Meter
