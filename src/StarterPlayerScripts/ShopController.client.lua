@@ -110,7 +110,7 @@ local function rebuildRodGrid()
         abCorner.Parent = actionButton
 
         if isOwned then
-            actionButton.Text = "✓ Куплено"
+            actionButton.Text = "✓ Owned"
             actionButton.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
             actionButton.TextColor3 = Color3.fromRGB(160, 165, 175)
             actionButton.Active = false

@@ -169,7 +169,7 @@ ComboUpdate.OnClientEvent:Connect(function(payload)
 
     local streak = payload.streak or 0
     if streak >= 2 then
-        label.Text = string.format("🔥 PERFECT ×%d  (×%.1f монет)", streak, payload.mult or 1)
+        label.Text = string.format("🔥 PERFECT ×%d  (×%.1f coins)", streak, payload.mult or 1)
         label.Visible = true
         label.TextTransparency = 0
         TweenService:Create(label,

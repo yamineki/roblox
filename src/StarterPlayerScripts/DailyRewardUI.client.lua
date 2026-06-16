@@ -30,13 +30,13 @@ local PlayerDataLoaded = Remotes:WaitForChild("PlayerDataLoaded")
 -- ══════════════════════════════════════════════════════════════
 local function getRewardTitle(reward)
     local t = reward.type
-    if t == "Coins"             then return "🪙 " .. (reward.amount or 0) .. " монет" end
-    if t == "LuckBoost"         then return "🍀 Удача ×" .. (reward.mult or 1.5) .. "\n30 мин" end
-    if t == "MutationBoost"     then return "✨ Мутации ×" .. (reward.mult or 2) .. "\n30 мин" end
-    if t == "AFKTicket"         then return "⏱ AFK билет ×" .. (reward.amount or 1) end
-    if t == "MutationChest"     then return "📦 Сундук мутаций\n×" .. (reward.amount or 1) end
-    if t == "RareFishChest"     then return "🐠 Rare+ сундук" end
-    if t == "ExclusiveMutation" then return "🌟 Особая мутация\nТолько сегодня" end
+    if t == "Coins"             then return "🪙 " .. (reward.amount or 0) .. " coins" end
+    if t == "LuckBoost"         then return "🍀 Luck ×" .. (reward.mult or 1.5) .. "\n30 min" end
+    if t == "MutationBoost"     then return "✨ Mutations ×" .. (reward.mult or 2) .. "\n30 min" end
+    if t == "AFKTicket"         then return "⏱ AFK ticket ×" .. (reward.amount or 1) end
+    if t == "MutationChest"     then return "📦 Mutation chest\n×" .. (reward.amount or 1) end
+    if t == "RareFishChest"     then return "🐠 Rare+ chest" end
+    if t == "ExclusiveMutation" then return "🌟 Special mutation\nToday only" end
     return "🎁 Награда"
 end
 
@@ -114,7 +114,7 @@ local function applyStatus(status)
     currentStatus = status
     local todayCard = status.nextDay
 
-    streakLabel.Text = "🔥 Серия: " .. status.streak .. " " .. (status.streak == 1 and "день" or "дней")
+    streakLabel.Text = "🔥 Streak: " .. status.streak .. " " .. (status.streak == 1 and "day" or "days")
 
     for day = 1, 7 do
         local c = dayCards[day]
@@ -152,7 +152,7 @@ local function applyStatus(status)
     claimBtn.BackgroundColor3 = status.canClaim
         and Color3.fromRGB(70, 160, 90)
         or  Color3.fromRGB(50, 52, 60)
-    claimBtn.Text = status.canClaim and "🎁  Забрать награду" or "✓  Уже получено"
+    claimBtn.Text = status.canClaim and "🎁  Claim Reward" or "✓  Already claimed"
 
     if countdownConn then countdownConn:Disconnect(); countdownConn = nil end
 
@@ -163,8 +163,8 @@ local function applyStatus(status)
             local h = math.floor(remaining / 3600)
             local m = math.floor((remaining % 3600) / 60)
             local s = remaining % 60
-            timerLabel.Text = string.format("Следующая через %02d:%02d:%02d", h, m, s)
-            if remaining <= 0 then timerLabel.Text = "Обновляется..." end
+            timerLabel.Text = string.format("Next in %02d:%02d:%02d", h, m, s)
+            if remaining <= 0 then timerLabel.Text = "Refreshing..." end
         end)
     else
         timerLabel.Text = ""
@@ -221,7 +221,7 @@ claimBtn.MouseButton1Click:Connect(function()
     if not currentStatus or not currentStatus.canClaim then return end
     SoundFX.Play("Click")
     claimBtn.Active = false
-    claimBtn.Text = "⏳ Получение..."
+    claimBtn.Text = "⏳ Claiming..."
     ClaimDailyReward:FireServer()
 end)
 
@@ -261,7 +261,7 @@ DailyRewardClaimed.OnClientEvent:Connect(function(payload)
     claimBtn.Active = false
     claimBtn.AutoButtonColor = false
     claimBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
-    claimBtn.Text = "✓  Уже получено"
+    claimBtn.Text = "✓  Already claimed"
 
     if currentStatus then
         currentStatus.canClaim = false

@@ -1,6 +1,6 @@
 -- StarterGui/CustomInventory.client.lua
 -- Reef Diver — Кастомный инвентарь
--- Хотбар снизу (удочки) + панель рыб (открывается по кнопке)
+-- Хотбар снизу (удочки) + панель fish (открывается по кнопке)
 -- GUI создаётся UIBuilder.lua — этот скрипт подключает всю логику.
 
 local Players           = game:GetService("Players")
@@ -405,7 +405,7 @@ local function refreshFishGrid()
 
     local fishFolder = Player:FindFirstChild("FishInventory")
     if not fishFolder then
-        fishCountLabel.Text = "0 рыб"
+        fishCountLabel.Text = "0 fish"
         FishScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
         return
     end
@@ -432,7 +432,7 @@ local function refreshFishGrid()
         end
     end
 
-    fishCountLabel.Text = count .. " рыб"
+    fishCountLabel.Text = count .. " fish"
     local rows = math.ceil(count / FISH_COLS)
     FishScrollFrame.CanvasSize = UDim2.fromOffset(0, rows * (FISH_SLOT_SIZE + SLOT_GAP) + SLOT_GAP)
 end
@@ -443,7 +443,7 @@ local function hookFishFolder(folder)
         for _, c in ipairs(folder:GetChildren()) do
             if c:IsA("Configuration") then count = count + 1 end
         end
-        fishCountLabel.Text = count .. " рыб"
+        fishCountLabel.Text = count .. " fish"
 
         if isFishPanelOpen and item:IsA("Configuration") then
             local entry = {
@@ -470,7 +470,7 @@ local function hookFishFolder(folder)
         for _, c in ipairs(folder:GetChildren()) do
             if c:IsA("Configuration") then count = count + 1 end
         end
-        fishCountLabel.Text = count .. " рыб"
+        fishCountLabel.Text = count .. " fish"
         if isFishPanelOpen then refreshFishGrid() end
     end)
 end
@@ -611,7 +611,7 @@ Remotes:WaitForChild("PlayerDataLoaded").OnClientEvent:Connect(function(data)
             for _, c in ipairs(folder:GetChildren()) do
                 if c:IsA("Configuration") then count = count + 1 end
             end
-            fishCountLabel.Text = count .. " рыб"
+            fishCountLabel.Text = count .. " fish"
         end
     end)
 end)

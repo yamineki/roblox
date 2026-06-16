@@ -108,11 +108,11 @@ local function makeCard(cfg, key, isOwned, isProduct, order)
     corner(buyBtn, 4)
 
     if isOwned then
-        buyBtn.Text = "✓ Куплено"
+        buyBtn.Text = "✓ Owned"
         buyBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
         buyBtn.Active = false
     elseif cfg.id == 0 then
-        buyBtn.Text = "Скоро"
+        buyBtn.Text = "Coming soon"
         buyBtn.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
         buyBtn.Active = false
     else
