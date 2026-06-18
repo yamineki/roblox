@@ -813,14 +813,19 @@ local function startHatchReveal(onComplete)
     local hatchOverlay = resultGui and resultGui:FindFirstChild("HatchOverlay")
     if not hatchOverlay then onComplete(); return end
 
-    local eggIcon   = hatchOverlay:FindFirstChild("EggIcon")
-    local crackBar  = hatchOverlay:FindFirstChild("CrackBar")
-    local crackFill = crackBar and crackBar:FindFirstChild("Fill")
-    local hatchHint = hatchOverlay:FindFirstChild("HatchHint")
+    local eggIcon    = hatchOverlay:FindFirstChild("EggIcon")
+    local burstFlash = hatchOverlay:FindFirstChild("BurstFlash")
+    local crackBar   = hatchOverlay:FindFirstChild("CrackBar")
+    local crackFill  = crackBar and crackBar:FindFirstChild("Fill")
+    local hatchHint  = hatchOverlay:FindFirstChild("HatchHint")
 
     hatchOverlay.Visible = true
     hatchOverlay.BackgroundTransparency = 0
-    if eggIcon then eggIcon.Rotation = 0; eggIcon.TextTransparency = 0 end
+    if eggIcon then
+        eggIcon.Rotation = 0; eggIcon.TextTransparency = 0
+        eggIcon.Size = UDim2.fromScale(0.7,0.7)
+    end
+    if burstFlash then burstFlash.BackgroundTransparency = 1; burstFlash.Size = UDim2.fromOffset(20,20) end
     if hatchHint then hatchHint.Visible = true end
     if crackFill then crackFill.Size = UDim2.new(0,0,1,0) end
 
@@ -834,16 +839,24 @@ local function startHatchReveal(onComplete)
         if hatchClickConn  then hatchClickConn:Disconnect();  hatchClickConn  = nil end
         playSound("CatchSuccess")
         if hatchHint then hatchHint.Visible = false end
+
+        -- Вспышка-разлом: белый круг резко расширяется и гаснет в момент раскрытия
+        if burstFlash then
+            burstFlash.BackgroundTransparency = 0
+            TweenService:Create(burstFlash, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                { Size = UDim2.fromOffset(420,420), BackgroundTransparency = 1 }):Play()
+        end
+        if eggIcon then
+            -- "Лопается" наружу с поворотом, как при разлёте осколков скорлупы
+            TweenService:Create(eggIcon, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+                { TextTransparency = 1, Size = UDim2.fromScale(1.15,1.15), Rotation = 35 }):Play()
+        end
         TweenService:Create(hatchOverlay, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             { BackgroundTransparency = 1 }):Play()
-        if eggIcon then
-            TweenService:Create(eggIcon, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.In),
-                { TextTransparency = 1 }):Play()
-        end
-        task.delay(0.2, function()
+        task.delay(0.22, function()
             hatchOverlay.Visible = false
             hatchOverlay.BackgroundTransparency = 0
-            if eggIcon then eggIcon.TextTransparency = 0 end
+            if eggIcon then eggIcon.TextTransparency = 0; eggIcon.Rotation = 0; eggIcon.Size = UDim2.fromScale(0.7,0.7) end
             onComplete()
         end)
     end
@@ -855,7 +868,9 @@ local function startHatchReveal(onComplete)
         hatchProgress = math.min(hatchProgress + dt * 0.12, 1)
         shakeT = shakeT + dt * (8 + hatchProgress * 30)
         if eggIcon then
-            eggIcon.Rotation = math.sin(shakeT) * (4 + hatchProgress * 14)
+            -- Резкая тряска влево-вправо (как в референсе с CFrame.Angles), а не плавный синус
+            local wobble = (shakeT % 1 < 0.5) and 1 or -1
+            eggIcon.Rotation = wobble * (5 + hatchProgress * 18) * math.abs(math.sin(shakeT))
         end
         if crackFill then
             crackFill.Size = UDim2.new(hatchProgress, 0, 1, 0)

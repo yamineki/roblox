@@ -228,14 +228,18 @@ do
 	local fi2 = img("FishImage", rp, UDim2.new(0.8,0,0.38,0), UDim2.new(0.1,0,0.04,0))
 	fi2.BackgroundColor3 = C.CardStroke; fi2.BackgroundTransparency = 0.3; corner(fi2, 8)
 
-	-- ══ HATCH OVERLAY (Pet Simulator-style egg reveal) ══
-	-- Закрывает FishImage чёрным "яйцом", которое трясётся и трескается перед
-	-- тем как показать настоящую рыбу — клик ускоряет процесс.
+	-- ══ HATCH OVERLAY (Pet Simulator-style reveal) ══
+	-- Закрывает FishImage силуэтом чёрной рыбы, которая трясётся и трескается
+	-- перед тем как показать настоящую рыбу — клик ускоряет процесс.
 	local hatchOverlay = frame("HatchOverlay", rp, UDim2.new(0.8,0,0.38,0), UDim2.new(0.1,0,0.04,0), Color3.fromRGB(14,14,18), 0, 8)
 	hatchOverlay.ZIndex = 6
-	local eggIcon = lbl("EggIcon", hatchOverlay, "🥚", UDim2.fromScale(0.7,0.7), UDim2.fromScale(0.15,0.06), C.Text, true)
+	local eggIcon = lbl("EggIcon", hatchOverlay, "🐟", UDim2.fromScale(0.7,0.7), UDim2.fromScale(0.15,0.06), Color3.fromRGB(8,8,10), true)
 	eggIcon.TextScaled = true; eggIcon.ZIndex = 7
-	local hatchHint = lbl("HatchHint", hatchOverlay, "Click to hatch!", UDim2.new(1,0,0,18), UDim2.new(0,0,0.78,0), C.TextDim, true, 12)
+	eggIcon.TextStrokeColor3 = Color3.fromRGB(60,60,70); eggIcon.TextStrokeTransparency = 0.5
+	-- Вспышка-разлом в момент полного раскрытия — белый круг, расширяется и гаснет
+	local burstFlash = frame("BurstFlash", hatchOverlay, UDim2.fromOffset(20,20), UDim2.fromScale(0.5,0.5), Color3.fromRGB(255,255,255), 1, 200)
+	burstFlash.AnchorPoint = Vector2.new(0.5,0.5); burstFlash.ZIndex = 8
+	local hatchHint = lbl("HatchHint", hatchOverlay, "Click to crack it open!", UDim2.new(1,0,0,18), UDim2.new(0,0,0.78,0), C.TextDim, true, 12)
 	hatchHint.ZIndex = 7
 	local crackBar = frame("CrackBar", hatchOverlay, UDim2.new(0.7,0,0,8), UDim2.new(0.15,0,0.9,0), Color3.fromRGB(40,40,50), 0, 4)
 	crackBar.ZIndex = 7
