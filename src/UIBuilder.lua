@@ -191,9 +191,25 @@ do
 	lbl("BehaviorLabel", cp, "Lazy", UDim2.fromOffset(200,30), UDim2.new(0.5,-100,0.22,0), Color3.fromRGB(160,165,175), false)
 	local el = lbl("EscapeLabel", cp, "Fish got away...", UDim2.fromOffset(400,50), UDim2.new(0.5,-200,0.45,0), C.Coral, true)
 	el.Visible = false
+	lbl("VariantLabel", cp, "", UDim2.fromOffset(260,26), UDim2.new(0.5,-130,0.30,0), Color3.fromRGB(200,210,230), false, 13)
 
 	local effectsLayer = frame("EffectsLayer", cp, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 1)
 	effectsLayer.ClipsDescendants = false; effectsLayer.ZIndex = 50
+
+	-- ══ TapCheckWidget — общий горизонтальный слайдер для вариантов Rhythm и SkillCheck ══
+	-- (Rhythm: индикатор колеблется непрерывно, тапай в такт.
+	--  SkillCheck (Dead by Daylight-style): виджет невидим до случайного "Check!",
+	--  затем индикатор быстро проходит бар один раз — тапни в зоне.)
+	local tcw = frame("TapCheckWidget", cp, UDim2.fromOffset(480,86), UDim2.new(0.5,-240,0.60,0), C.PanelDark, 0, 8)
+	tcw.Visible = false
+	stroke(tcw, C.Stroke, 1.5, 0)
+	local tapHint = lbl("TapHint", tcw, "Tap to the rhythm!", UDim2.fromOffset(440,20), UDim2.fromOffset(20,4), C.White, true, 13)
+	local tapBar = frame("TapBar", tcw, UDim2.fromOffset(440,40), UDim2.fromOffset(20,30), C.PanelBG, 0, 6)
+	frame("TapGreenZone", tapBar, UDim2.fromOffset(90,40), UDim2.new(0.5,-45,0,0), C.GreenZone, 0.35, 6)
+	frame("TapPerfectZone", tapBar, UDim2.fromOffset(36,40), UDim2.new(0.5,-18,0,0), Color3.fromRGB(120,230,140), 0.1, 6)
+	local tapInd = frame("TapIndicator", tapBar, UDim2.fromOffset(8,40), UDim2.new(0,0,0,0), C.White, 0, 4)
+	stroke(tapInd, Color3.fromRGB(20,20,24), 1, 0)
+	frame("TapCenterLine", tapBar, UDim2.fromOffset(2,40), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
 
 	-- Result Phase
 	local rp = frame("ResultPhase", g, UDim2.fromOffset(400,550), UDim2.new(0.5,-200,0.5,-275), C.Card, 0, RADIUS)

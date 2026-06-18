@@ -59,6 +59,40 @@ local fishInZonePrev   = false
 local lastRippleTime   = 0
 local zoneTintTween    = nil
 
+-- ══ ВАРИАНТЫ CATCH PHASE ══
+-- Каждая поклёвка случайно выбирает один из вариантов мини-игры вытягивания —
+-- так одна и та же рыба не всегда играется одинаково.
+local CATCH_VARIANTS = {
+    { id = "Classic",   weight = 55 },  -- держи рыбу в зелёной зоне (текущая механика)
+    { id = "Rhythm",    weight = 25 },  -- тапай в такт колеблющемуся индикатору
+    { id = "SkillCheck",weight = 20 },  -- Dead by Daylight-style: держи + внезапные проверки
+}
+local currentVariant = "Classic"
+
+local function pickVariant()
+    local total = 0
+    for _, v in ipairs(CATCH_VARIANTS) do total = total + v.weight end
+    local roll = rng:NextNumber() * total
+    local acc = 0
+    for _, v in ipairs(CATCH_VARIANTS) do
+        acc = acc + v.weight
+        if roll <= acc then return v.id end
+    end
+    return CATCH_VARIANTS[1].id
+end
+
+-- Rhythm variant
+local tapBarPos    = 0       -- 0..1 позиция индикатора по бару
+local tapBarAngle  = 0       -- "градусы" для синусоиды (как Hook Phase)
+local tapBarSpeed  = 140
+
+-- SkillCheck (DBD-style) variant
+local skillCheckActive  = false
+local skillCheckPos     = 0.5   -- 0..1 позиция зоны проверки на баре
+local skillCheckProgress= 0     -- 0..1 прогресс прохода индикатора через бар во время проверки
+local skillCheckCooldown= 0     -- сек до следующей проверки
+local skillCheckResolved= true  -- успели ли тапнуть в этом раунде проверки
+
 -- ══ ЗВУКИ ══
 local function playSound(name)
     SoundFX.Play(name)
@@ -89,6 +123,10 @@ local updateHookPhase
 local onHookInput
 local startCatchPhase
 local updateCatchPhase
+local updateClassicCatch
+local updateRhythmCatch
+local updateSkillCheckCatch
+local onCatchTap
 local finishCatch
 
 -- ══ ФАЗА 1: ПОДСЕЧКА ══
@@ -240,6 +278,27 @@ function startCatchPhase()
     fishTargetDir  = (rng:NextInteger(0,1) == 0) and -1 or 1
     dirChangeTimer = 0
 
+    -- Случайный вариант мини-игры вытягивания — разнообразие на каждой поклёвке
+    currentVariant   = pickVariant()
+    tapBarAngle       = 0
+    tapBarPos         = 0.5
+    skillCheckActive  = false
+    skillCheckResolved= true
+    skillCheckPos     = 0.5
+    skillCheckProgress= 0
+    skillCheckCooldown= 1.0 + rng:NextNumber() * 1.2
+
+    -- Сбросить позицию зон тапа в центр — иначе они могут остаться там,
+    -- где их оставил предыдущий SkillCheck-раунд, даже если выпал Rhythm
+    if catchGui then
+        local tapWidget = catchGui:FindFirstChild("TapCheckWidget")
+        local tapBar = tapWidget and tapWidget:FindFirstChild("TapBar")
+        local greenZone = tapBar and tapBar:FindFirstChild("TapGreenZone")
+        local perfectZone = tapBar and tapBar:FindFirstChild("TapPerfectZone")
+        if greenZone then greenZone.Position = UDim2.new(0.5,-45,0,0) end
+        if perfectZone then perfectZone.Position = UDim2.new(0.5,-18,0,0) end
+    end
+
     -- Выбрать поведение по случайной рыбе из текущей зоны.
     -- (Тип влияет ТОЛЬКО на сложность мини-игры; реальная рыба = серверный ролл.)
     local zoneFish = FishData:GetFishInZone(currentZone)
@@ -253,6 +312,28 @@ function startCatchPhase()
         end
     else
         currentBehavior = GameConfig.FishBehavior.Lazy
+    end
+
+    -- Показать/скрыть виджеты под выбранный вариант
+    if catchGui then
+        local scaleFrame = catchGui:FindFirstChild("ScaleFrame")
+        local tapWidget   = catchGui:FindFirstChild("TapCheckWidget")
+        local variantLbl  = catchGui:FindFirstChild("VariantLabel")
+        if scaleFrame then scaleFrame.Visible = (currentVariant == "Classic") end
+        if tapWidget then
+            tapWidget.Visible = (currentVariant == "Rhythm")  -- SkillCheck показывает его сам по событию
+            local tapHint = tapWidget:FindFirstChild("TapHint")
+            if tapHint then tapHint.Text = "Tap to the rhythm!" end
+        end
+        if variantLbl then
+            if currentVariant == "Classic" then
+                variantLbl.Text = "Hold to keep the fish in the green zone!"
+            elseif currentVariant == "Rhythm" then
+                variantLbl.Text = "🎵 Rhythm — tap when the bar hits the zone!"
+            else
+                variantLbl.Text = "🔧 Hold to reel — watch for Skill Checks!"
+            end
+        end
     end
 
     -- Остановить тряску удочки при выходе из фазы подсечки
@@ -284,6 +365,56 @@ function updateCatchPhase(dt)
         end
     end
 
+    if currentVariant == "Rhythm" then
+        updateRhythmCatch(dt)
+    elseif currentVariant == "SkillCheck" then
+        updateSkillCheckCatch(dt)
+    else
+        updateClassicCatch(dt)
+    end
+
+    -- Обновить общий прогресс-бар + статусные лейблы (общие для всех вариантов)
+    if catchGui then
+        local progressBar = catchGui:FindFirstChild("ProgressBar")
+        if progressBar then
+            local fill = progressBar:FindFirstChild("Fill")
+            if fill then
+                local pct = math.clamp(catchProgress / GameConfig.Fishing.MaxProgress, 0, 1)
+                fill.Size     = UDim2.new(1, 0, pct, 0)
+                fill.Position = UDim2.new(0, 0, 1 - pct, 0)
+            end
+        end
+
+        local stressLabel = catchGui:FindFirstChild("StressLabel")
+        if stressLabel then
+            stressLabel.Visible = stressMultiplier > 1.2
+            if stressLabel.Visible then
+                stressLabel.Text = Strings.Stress_Warning
+            end
+        end
+
+        local perfectLabel = catchGui:FindFirstChild("PerfectLabel")
+        if perfectLabel then
+            perfectLabel.Visible = isPerfectCatch
+            if isPerfectCatch then
+                perfectLabel.Text = Strings.Catching_Perfect
+            end
+        end
+    end
+
+    -- Победа
+    if catchProgress >= GameConfig.Fishing.MaxProgress then
+        finishCatch(true)
+    end
+
+    -- Поражение
+    if catchProgress <= GameConfig.Fishing.MinProgress then
+        finishCatch(false)
+    end
+end
+
+-- ══ ВАРИАНТ: CLASSIC (держи рыбу в зелёной зоне) ══
+function updateClassicCatch(dt)
     -- ══ ДВИЖЕНИЕ РЫБЫ ПО ПОВЕДЕНИЮ ══
     local b = currentBehavior or GameConfig.FishBehavior.Lazy
     local scaleH = GameConfig.Fishing.ScaleHeight
@@ -358,18 +489,8 @@ function updateCatchPhase(dt)
     -- Обновить UI
     if catchGui then
         local scaleFrame    = catchGui:FindFirstChild("ScaleFrame")
-        local progressBar   = catchGui:FindFirstChild("ProgressBar")
         local fishIndicator = scaleFrame and scaleFrame:FindFirstChild("FishIndicator")
         local greenZoneFrame= scaleFrame and scaleFrame:FindFirstChild("GreenZone")
-
-        if progressBar then
-            local fill = progressBar:FindFirstChild("Fill")
-            if fill then
-                local pct = math.clamp(catchProgress / GameConfig.Fishing.MaxProgress, 0, 1)
-                fill.Size     = UDim2.new(1, 0, pct, 0)
-                fill.Position = UDim2.new(0, 0, 1 - pct, 0)
-            end
-        end
 
         -- Позиционирование относительно ScaleFrame (400px высота)
         local scaleH = GameConfig.Fishing.ScaleHeight
@@ -439,34 +560,145 @@ function updateCatchPhase(dt)
 
             fishInZonePrev = fishInZone
         end
+    end
+end
 
-        -- Stress предупреждение
-        local stressLabel = catchGui:FindFirstChild("StressLabel")
-        if stressLabel then
-            stressLabel.Visible = stressMultiplier > 1.2
-            if stressLabel.Visible then
-                stressLabel.Text = Strings.Stress_Warning
-            end
-        end
+-- ══ ОБЩИЙ ВИДЖЕТ TapCheckWidget (Rhythm/SkillCheck) ══
+local function getTapWidget()
+    if not catchGui then return nil end
+    local widget = catchGui:FindFirstChild("TapCheckWidget")
+    if not widget then return nil end
+    local bar = widget:FindFirstChild("TapBar")
+    return widget, bar, bar and bar:FindFirstChild("TapIndicator"),
+        bar and bar:FindFirstChild("TapGreenZone"), bar and bar:FindFirstChild("TapPerfectZone")
+end
 
-        -- Perfect Catch статус
-        local perfectLabel = catchGui:FindFirstChild("PerfectLabel")
-        if perfectLabel then
-            perfectLabel.Visible = isPerfectCatch
-            if isPerfectCatch then
-                perfectLabel.Text = Strings.Catching_Perfect
-            end
-        end
+local function flashTapIndicator(color)
+    local _, _, indicator = getTapWidget()
+    if not indicator then return end
+    indicator.BackgroundColor3 = color
+    TweenService:Create(
+        indicator,
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+        { BackgroundColor3 = Color3.new(1,1,1) }
+    ):Play()
+end
+
+-- ══ ВАРИАНТ: RHYTHM (тапай в такт колеблющемуся индикатору) ══
+function updateRhythmCatch(dt)
+    -- Индикатор непрерывно колеблется по баре, как стрелка в Hook Phase.
+    -- Темп растёт вместе со stress-мультипликатором — сложнее со временем.
+    tapBarSpeed = GameConfig.Fishing.HookArrowBaseSpeed * stressMultiplier
+    tapBarAngle = (tapBarAngle + tapBarSpeed * dt) % 360
+    tapBarPos = (math.sin(math.rad(tapBarAngle)) + 1) / 2  -- 0..1
+
+    -- Без тапов прогресс медленно утекает — нужно реально тапать в ритм
+    catchProgress = math.clamp(
+        catchProgress - GameConfig.Fishing.EscapeRate * 0.25 * dt,
+        0, GameConfig.Fishing.MaxProgress
+    )
+
+    local widget, bar, indicator = getTapWidget()
+    if bar and indicator then
+        indicator.Position = UDim2.new(tapBarPos, -4, 0, 0)
+    end
+end
+
+-- ══ ВАРИАНТ: SKILL CHECK (Dead by Daylight-style) ══
+function updateSkillCheckCatch(dt)
+    -- Базовое вытягивание: держишь — тащишь рыбу, отпустил — она тянет назад
+    if isHolding then
+        catchProgress = math.clamp(
+            catchProgress + GameConfig.Fishing.CatchRate * 0.6 * dt,
+            0, GameConfig.Fishing.MaxProgress
+        )
+    else
+        catchProgress = math.clamp(
+            catchProgress - GameConfig.Fishing.EscapeRate * 0.5 * dt,
+            0, GameConfig.Fishing.MaxProgress
+        )
     end
 
-    -- Победа
-    if catchProgress >= GameConfig.Fishing.MaxProgress then
-        finishCatch(true)
-    end
+    local widget, bar, indicator, greenZone, perfectZone = getTapWidget()
 
-    -- Поражение
-    if catchProgress <= GameConfig.Fishing.MinProgress then
-        finishCatch(false)
+    if not skillCheckActive then
+        skillCheckCooldown = skillCheckCooldown - dt
+        if skillCheckCooldown <= 0 then
+            -- Запустить новую внезапную проверку
+            skillCheckActive   = true
+            skillCheckResolved = false
+            skillCheckProgress = 0
+            skillCheckPos = 0.2 + rng:NextNumber() * 0.6  -- случайная зона на баре
+            if widget then widget.Visible = true end
+            local tapHint = widget and widget:FindFirstChild("TapHint")
+            if tapHint then tapHint.Text = "Check!" end
+            if greenZone then greenZone.Position = UDim2.new(skillCheckPos, -45, 0, 0) end
+            if perfectZone then perfectZone.Position = UDim2.new(skillCheckPos, -18, 0, 0) end
+            playSound("HookHit")
+        end
+    else
+        -- Игла один раз быстро проходит бар слева направо
+        skillCheckProgress = math.clamp(skillCheckProgress + dt / 0.7, 0, 1)
+        if indicator then indicator.Position = UDim2.new(skillCheckProgress, -4, 0, 0) end
+
+        if skillCheckProgress >= 1 and not skillCheckResolved then
+            -- Не успел тапнуть вовремя — провал проверки
+            skillCheckResolved = true
+            isPerfectCatch = false
+            catchProgress = math.clamp(catchProgress - 14, 0, GameConfig.Fishing.MaxProgress)
+            flashTapIndicator(Color3.fromRGB(220,90,80))
+            playSound("HookMiss")
+            stressMultiplier = stressMultiplier + GameConfig.Fishing.StressSpeedBonus
+        end
+
+        if skillCheckProgress >= 1 then
+            skillCheckActive = false
+            skillCheckCooldown = 1.4 + rng:NextNumber() * 1.8
+            if widget then widget.Visible = false end
+        end
+    end
+end
+
+-- ══ ВВОД В CATCH PHASE: тап для Rhythm / SkillCheck ══
+function onCatchTap()
+    if currentPhase ~= "catching" then return end
+
+    if currentVariant == "Rhythm" then
+        local diff = math.abs(tapBarPos - 0.5) * 360
+        local halfZone = GameConfig.Fishing.HookZoneAngle / 2
+        if diff <= GameConfig.Fishing.HookPerfectWindow then
+            catchProgress = math.clamp(catchProgress + 18, 0, GameConfig.Fishing.MaxProgress)
+            flashTapIndicator(Color3.fromRGB(90,200,110))
+            playSound("HookHit")
+        elseif diff <= halfZone then
+            catchProgress = math.clamp(catchProgress + 10, 0, GameConfig.Fishing.MaxProgress)
+            flashTapIndicator(Color3.fromRGB(90,200,110))
+            playSound("HookHit")
+        else
+            catchProgress = math.clamp(catchProgress - 8, 0, GameConfig.Fishing.MaxProgress)
+            isPerfectCatch = false
+            flashTapIndicator(Color3.fromRGB(220,90,80))
+            playSound("HookMiss")
+        end
+
+    elseif currentVariant == "SkillCheck" then
+        if not skillCheckActive or skillCheckResolved then return end
+        skillCheckResolved = true
+        local diff = math.abs(skillCheckProgress - skillCheckPos)
+        if diff <= 0.04 then
+            catchProgress = math.clamp(catchProgress + 25, 0, GameConfig.Fishing.MaxProgress)
+            flashTapIndicator(Color3.fromRGB(90,200,110))
+            playSound("CatchSuccess")
+        elseif diff <= 0.12 then
+            catchProgress = math.clamp(catchProgress + 14, 0, GameConfig.Fishing.MaxProgress)
+            flashTapIndicator(Color3.fromRGB(90,200,110))
+            playSound("HookHit")
+        else
+            catchProgress = math.clamp(catchProgress - 10, 0, GameConfig.Fishing.MaxProgress)
+            isPerfectCatch = false
+            flashTapIndicator(Color3.fromRGB(220,90,80))
+            playSound("HookMiss")
+        end
     end
 end
 
@@ -650,6 +882,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if currentPhase ~= "catching" then return end
     if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.MouseButton1 then
         isHolding = true
+        onCatchTap()
     end
 end)
 
