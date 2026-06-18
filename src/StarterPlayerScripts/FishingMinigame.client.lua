@@ -13,6 +13,7 @@ local GameConfig = require(ReplicatedStorage.Modules.GameConfig)
 local Strings    = require(ReplicatedStorage.Modules.Strings)
 local FishData   = require(ReplicatedStorage.Modules.FishData)
 local SoundFX    = require(ReplicatedStorage.Modules.SoundFX)
+local RodData    = require(ReplicatedStorage.Modules.RodData)
 
 local Player     = Players.LocalPlayer
 local PlayerGui  = Player.PlayerGui
@@ -24,6 +25,24 @@ local HookResultEvent = Remotes:WaitForChild("HookResult")
 local CatchResultEvent = Remotes:WaitForChild("CatchResult")
 local FishCaughtEvent  = Remotes:WaitForChild("FishCaught")
 local FishEscapedEvent = Remotes:WaitForChild("FishEscaped")
+local GetRods          = Remotes:WaitForChild("GetRods")
+local RodEquippedEvent = Remotes:WaitForChild("RodEquipped")
+
+-- ══ СЛОЖНОСТЬ: ТЕКУЩАЯ УДОЧКА ══
+-- Лучшая удочка (greenZoneBonus/catchRateBonus) делает мини-игру легче —
+-- удочка влияет на сложность напрямую (см. GameConfig.GetCatchDifficulty)
+local equippedRodId = "WoodenRod"
+local catchDifficulty = 1  -- пересчитывается в начале каждой Catch Phase
+
+task.spawn(function()
+    local ok, rodsData = pcall(function() return GetRods:InvokeServer() end)
+    if ok and rodsData and rodsData.equipped then
+        equippedRodId = rodsData.equipped
+    end
+end)
+RodEquippedEvent.OnClientEvent:Connect(function(rodId)
+    equippedRodId = rodId
+end)
 
 -- ══ ПЕРЕМЕННЫЕ СОСТОЯНИЯ ══
 local isMinigameActive = false
@@ -129,6 +148,7 @@ local updateRhythmCatch
 local updateSkillCheckCatch
 local onCatchTap
 local finishCatch
+local applyCatchResult
 
 -- ══ ФАЗА 1: ПОДСЕЧКА ══
 function startHookPhase()
@@ -279,6 +299,11 @@ function startCatchPhase()
     fishTargetDir  = (rng:NextInteger(0,1) == 0) and -1 or 1
     dirChangeTimer = 0
 
+    -- Сложность зависит от зоны (глубже = резвее рыба) и от текущей удочки
+    -- (лучше удочка = легче) — пересчитывается на каждую поклёвку
+    local rod = RodData:GetRod(equippedRodId)
+    catchDifficulty = GameConfig.GetCatchDifficulty(currentZone, rod)
+
     -- Случайный вариант мини-игры вытягивания — разнообразие на каждой поклёвке
     currentVariant   = pickVariant()
     tapBarAngle       = 0
@@ -296,8 +321,8 @@ function startCatchPhase()
         local tapBar = tapWidget and tapWidget:FindFirstChild("TapBar")
         local greenZone = tapBar and tapBar:FindFirstChild("TapGreenZone")
         local perfectZone = tapBar and tapBar:FindFirstChild("TapPerfectZone")
-        if greenZone then greenZone.Position = UDim2.new(0.5,-45,0,0) end
-        if perfectZone then perfectZone.Position = UDim2.new(0.5,-18,0,0) end
+        if greenZone then greenZone.Position = UDim2.new(0.5,-55,0,0) end
+        if perfectZone then perfectZone.Position = UDim2.new(0.5,-23,0,0) end
     end
 
     -- Выбрать поведение по случайной рыбе из текущей зоны.
@@ -465,8 +490,8 @@ function updateClassicCatch(dt)
         end
     end
 
-    -- Целевая скорость в направлении (с учётом stress и gravityBias)
-    local targetVel = fishTargetDir * b.speed * stressMultiplier
+    -- Целевая скорость в направлении (с учётом stress, сложности зоны/удочки и gravityBias)
+    local targetVel = fishTargetDir * b.speed * stressMultiplier * catchDifficulty
     targetVel = targetVel - (b.gravityBias or 0) * b.speed  -- Sinker тонет, Floater всплывает
 
     -- Плавное приближение к целевой скорости (accel = резкость)
@@ -485,8 +510,9 @@ function updateClassicCatch(dt)
         fishVelocity = -math.abs(fishVelocity) * 0.5
     end
 
-    -- Движение зелёной зоны
-    local halfZone = GameConfig.GreenZone.Height / 2
+    -- Движение зелёной зоны (удочка с greenZoneBonus делает её шире = легче)
+    local rodGreenBonus = (RodData:GetRod(equippedRodId) or {}).greenZoneBonus or 0
+    local halfZone = (GameConfig.GreenZone.Height * (1 + rodGreenBonus)) / 2
     if isHolding then
         greenZoneVel = greenZoneVel + GameConfig.GreenZone.Acceleration * dt
     else
@@ -617,7 +643,7 @@ end
 function updateRhythmCatch(dt)
     -- Индикатор непрерывно колеблется по баре, как стрелка в Hook Phase.
     -- Темп растёт вместе со stress-мультипликатором — сложнее со временем.
-    tapBarSpeed = GameConfig.Fishing.HookArrowBaseSpeed * stressMultiplier
+    tapBarSpeed = GameConfig.Fishing.HookArrowBaseSpeed * stressMultiplier * catchDifficulty
     tapBarAngle = (tapBarAngle + tapBarSpeed * dt) % 360
     tapBarPos = (math.sin(math.rad(tapBarAngle)) + 1) / 2  -- 0..1
 
@@ -661,13 +687,13 @@ function updateSkillCheckCatch(dt)
             if widget then widget.Visible = true end
             local tapHint = widget and widget:FindFirstChild("TapHint")
             if tapHint then tapHint.Text = "Check!" end
-            if greenZone then greenZone.Position = UDim2.new(skillCheckPos, -45, 0, 0) end
-            if perfectZone then perfectZone.Position = UDim2.new(skillCheckPos, -18, 0, 0) end
+            if greenZone then greenZone.Position = UDim2.new(skillCheckPos, -55, 0, 0) end
+            if perfectZone then perfectZone.Position = UDim2.new(skillCheckPos, -23, 0, 0) end
             playSound("HookHit")
         end
     else
-        -- Игла один раз быстро проходит бар слева направо
-        skillCheckProgress = math.clamp(skillCheckProgress + dt / 0.7, 0, 1)
+        -- Игла один раз быстро проходит бар слева направо (быстрее = сложнее)
+        skillCheckProgress = math.clamp(skillCheckProgress + (dt * catchDifficulty) / 0.7, 0, 1)
         if indicator then indicator.Position = UDim2.new(skillCheckProgress, -4, 0, 0) end
 
         if skillCheckProgress >= 1 and not skillCheckResolved then
@@ -776,13 +802,92 @@ finishCatch = function(success)
     end
 end
 
+-- ══ EGG HATCH REVEAL (Pet Simulator-style) — рыба не показывается мгновенно:
+-- сначала чёрное "яйцо" трясётся, клики ускоряют трещину, затем оно лопается ══
+local hatchActive  = false
+local hatchProgress= 0
+local hatchRenderConn
+local hatchClickConn
+
+local function startHatchReveal(onComplete)
+    local hatchOverlay = resultGui and resultGui:FindFirstChild("HatchOverlay")
+    if not hatchOverlay then onComplete(); return end
+
+    local eggIcon   = hatchOverlay:FindFirstChild("EggIcon")
+    local crackBar  = hatchOverlay:FindFirstChild("CrackBar")
+    local crackFill = crackBar and crackBar:FindFirstChild("Fill")
+    local hatchHint = hatchOverlay:FindFirstChild("HatchHint")
+
+    hatchOverlay.Visible = true
+    hatchOverlay.BackgroundTransparency = 0
+    if eggIcon then eggIcon.Rotation = 0; eggIcon.TextTransparency = 0 end
+    if hatchHint then hatchHint.Visible = true end
+    if crackFill then crackFill.Size = UDim2.new(0,0,1,0) end
+
+    hatchActive   = true
+    hatchProgress = 0
+    local shakeT  = 0
+
+    local function finishHatch()
+        hatchActive = false
+        if hatchRenderConn then hatchRenderConn:Disconnect(); hatchRenderConn = nil end
+        if hatchClickConn  then hatchClickConn:Disconnect();  hatchClickConn  = nil end
+        playSound("CatchSuccess")
+        if hatchHint then hatchHint.Visible = false end
+        TweenService:Create(hatchOverlay, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            { BackgroundTransparency = 1 }):Play()
+        if eggIcon then
+            TweenService:Create(eggIcon, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+                { TextTransparency = 1 }):Play()
+        end
+        task.delay(0.2, function()
+            hatchOverlay.Visible = false
+            hatchOverlay.BackgroundTransparency = 0
+            if eggIcon then eggIcon.TextTransparency = 0 end
+            onComplete()
+        end)
+    end
+
+    if hatchRenderConn then hatchRenderConn:Disconnect() end
+    hatchRenderConn = RunService.RenderStepped:Connect(function(dt)
+        if not hatchActive then return end
+        -- Пассивный прирост трещины + "тряска" усиливается по мере прогресса
+        hatchProgress = math.min(hatchProgress + dt * 0.12, 1)
+        shakeT = shakeT + dt * (8 + hatchProgress * 30)
+        if eggIcon then
+            eggIcon.Rotation = math.sin(shakeT) * (4 + hatchProgress * 14)
+        end
+        if crackFill then
+            crackFill.Size = UDim2.new(hatchProgress, 0, 1, 0)
+        end
+        if hatchProgress >= 1 then
+            finishHatch()
+        end
+    end)
+
+    if hatchClickConn then hatchClickConn:Disconnect() end
+    hatchClickConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not hatchActive or gameProcessed then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+            hatchProgress = math.min(hatchProgress + 0.07, 1)
+            playSound("HookHit")
+        end
+    end)
+end
+
 -- ══ ФАЗА 3: РЕЗУЛЬТАТ ══
 FishCaughtEvent.OnClientEvent:Connect(function(catchEntry)
     isMinigameActive = false
     currentPhase = "result"
 
     setGuiVisible("ResultPhase", true)
+    startHatchReveal(function()
+        applyCatchResult(catchEntry)
+    end)
+end)
 
+applyCatchResult = function(catchEntry)
     if resultGui then
         -- PLACEHOLDER: все Image = "" — заменить на реальные asset ID
         local fishImage   = resultGui:FindFirstChild("FishImage")
@@ -854,15 +959,13 @@ FishCaughtEvent.OnClientEvent:Connect(function(catchEntry)
         ):Play()
     end
 
-    playSound("CatchSuccess")
-
     -- Закрыть через 3 секунды или по нажатию
     task.delay(3, function()
         if currentPhase == "result" then
             setGuiVisible("ResultPhase", false)
         end
     end)
-end)
+end
 
 -- ══ ЗАПУСК МИНИ-ИГРЫ ══
 local function beginFishing()

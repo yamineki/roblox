@@ -214,8 +214,8 @@ do
 	stroke(tcw, C.Stroke, 1.5, 0)
 	local tapHint = lbl("TapHint", tcw, "Tap to the rhythm!", UDim2.fromOffset(320,20), UDim2.fromOffset(20,4), C.White, true, 13)
 	local tapBar = frame("TapBar", tcw, UDim2.fromOffset(320,40), UDim2.fromOffset(20,30), C.PanelBG, 0, 6)
-	frame("TapGreenZone", tapBar, UDim2.fromOffset(90,40), UDim2.new(0.5,-45,0,0), C.GreenZone, 0.35, 6)
-	frame("TapPerfectZone", tapBar, UDim2.fromOffset(36,40), UDim2.new(0.5,-18,0,0), Color3.fromRGB(120,230,140), 0.1, 6)
+	frame("TapGreenZone", tapBar, UDim2.fromOffset(110,40), UDim2.new(0.5,-55,0,0), C.GreenZone, 0.35, 6)
+	frame("TapPerfectZone", tapBar, UDim2.fromOffset(46,40), UDim2.new(0.5,-23,0,0), Color3.fromRGB(120,230,140), 0.1, 6)
 	local tapInd = frame("TapIndicator", tapBar, UDim2.fromOffset(8,40), UDim2.new(0,0,0,0), C.White, 0, 4)
 	stroke(tapInd, Color3.fromRGB(20,20,24), 1, 0)
 	frame("TapCenterLine", tapBar, UDim2.fromOffset(2,40), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
@@ -227,6 +227,21 @@ do
 	rarityBanner.Name = "RarityBanner"
 	local fi2 = img("FishImage", rp, UDim2.new(0.8,0,0.38,0), UDim2.new(0.1,0,0.04,0))
 	fi2.BackgroundColor3 = C.CardStroke; fi2.BackgroundTransparency = 0.3; corner(fi2, 8)
+
+	-- ══ HATCH OVERLAY (Pet Simulator-style egg reveal) ══
+	-- Закрывает FishImage чёрным "яйцом", которое трясётся и трескается перед
+	-- тем как показать настоящую рыбу — клик ускоряет процесс.
+	local hatchOverlay = frame("HatchOverlay", rp, UDim2.new(0.8,0,0.38,0), UDim2.new(0.1,0,0.04,0), Color3.fromRGB(14,14,18), 0, 8)
+	hatchOverlay.ZIndex = 6
+	local eggIcon = lbl("EggIcon", hatchOverlay, "🥚", UDim2.fromScale(0.7,0.7), UDim2.fromScale(0.15,0.06), C.Text, true)
+	eggIcon.TextScaled = true; eggIcon.ZIndex = 7
+	local hatchHint = lbl("HatchHint", hatchOverlay, "Click to hatch!", UDim2.new(1,0,0,18), UDim2.new(0,0,0.78,0), C.TextDim, true, 12)
+	hatchHint.ZIndex = 7
+	local crackBar = frame("CrackBar", hatchOverlay, UDim2.new(0.7,0,0,8), UDim2.new(0.15,0,0.9,0), Color3.fromRGB(40,40,50), 0, 4)
+	crackBar.ZIndex = 7
+	local crackFill = frame("Fill", crackBar, UDim2.new(0,0,1,0), UDim2.new(), Color3.fromRGB(255,200,60), 0, 4)
+	crackFill.Name = "Fill"; crackFill.ZIndex = 7
+
 	local nb = lbl("NewBadge", rp, "✨ NEW!", UDim2.fromOffset(90,30), UDim2.new(1,-100,0,12), C.Gold, true)
 	nb.Visible = false; nb.TextStrokeTransparency = 0.4; nb.ZIndex = 5
 	lbl("FishName",    rp, "???",     UDim2.new(1,0,0.10,0), UDim2.new(0,0,0.44,0), C.Text, true, 26)
@@ -676,10 +691,11 @@ do
 	local g = scrGui("ExpeditionPanel", 141); g.Enabled = false
 
 	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
-	dim.BackgroundTransparency = 0.5; dim.AutoButtonColor = false
+	dim.BackgroundTransparency = 0.45; dim.AutoButtonColor = false
 
-	local panel = frame("Panel", g, UDim2.fromOffset(520,400), UDim2.new(0.5,0,0.5,0), AC, 0, RADIUS)
-	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, C.BlueDark, 2, 0)
+	-- Тёмное стекло вместо сплошной синей плашки — в стиле остального UI
+	local panel = frame("Panel", g, UDim2.fromOffset(520,400), UDim2.new(0.5,0,0.5,0), C.Card, 0.06, RADIUS)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, C.CardStroke, 1.5, 0.15)
 
 	local hdr = brightHeader(panel, 50, AC, C.BlueDark)
 	lbl("Title", panel, "🚤  Expeditions", UDim2.new(0.5,0,0,50), UDim2.new(0,14,0,0), C.White, true, 20)
@@ -688,8 +704,8 @@ do
 	closeX(panel)
 
 	-- Три слота: Short / Medium / Long. Третий разблокируется геймпассом Extra AFK Slot.
-	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), C.Card, 0.08, 8)
-	stroke(sc, C.CardStroke, 1.5, 0)
+	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), Color3.fromRGB(14,16,22), 0.15, 8)
+	stroke(sc, C.CardStroke, 1.5, 0.2)
 	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.new(1,-12,0.32,-6)
 	gl.CellPadding = UDim2.fromOffset(0,6); gl.SortOrder = Enum.SortOrder.LayoutOrder
 	local gpad = Instance.new("UIPadding"); gpad.PaddingLeft = UDim.new(0,6); gpad.PaddingTop = UDim.new(0,6)
@@ -702,12 +718,12 @@ do
 	}
 	for i = 1, 3 do
 		local info = SLOT_INFO[i]
-		local sl = frame("Slot"..i, sc, UDim2.new(), UDim2.new(), C.Blue, 0, 8)
+		local sl = frame("Slot"..i, sc, UDim2.new(), UDim2.new(), C.Card, 0.05, 8)
 		sl.Name = "Slot"..i
-		stroke(sl, C.BlueDark, 1.5, 0.2)
+		stroke(sl, C.Blue, 1.5, 0.35)
 		lbl("SlotTitle", sl, info.title, UDim2.new(1,-8,0,20), UDim2.fromOffset(4,4), C.White, true, 13)
-		lbl("SlotDesc", sl, info.desc, UDim2.new(1,-8,0,16), UDim2.fromOffset(4,22), Color3.fromRGB(220,235,255), false, 10)
-		lbl("SlotStatus", sl, "Ready", UDim2.new(1,-8,0,16), UDim2.new(0,4,0,40), Color3.fromRGB(200,230,255), false, 11)
+		lbl("SlotDesc", sl, info.desc, UDim2.new(1,-8,0,16), UDim2.fromOffset(4,22), Color3.fromRGB(190,205,225), false, 10)
+		lbl("SlotStatus", sl, "Ready", UDim2.new(1,-8,0,16), UDim2.new(0,4,0,40), Color3.fromRGB(140,200,255), false, 11)
 		local stb = btn("StartBtn", sl, "▶ Send", UDim2.new(0.46,0,0,24), UDim2.new(0,4,1,-28), C.Green, C.White, 12)
 		corner(stb, BRAD); stroke(stb, C.GreenDark, 1, 0)
 		local ctb = btn("CollectBtn", sl, "⬇ Collect", UDim2.new(0.46,0,0,24), UDim2.new(0.54,0,1,-28), C.Orange, C.White, 12)
@@ -727,10 +743,11 @@ do
 	local g = scrGui("RebirthPanel", 142); g.Enabled = false
 
 	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
-	dim.BackgroundTransparency = 0.5; dim.AutoButtonColor = false
+	dim.BackgroundTransparency = 0.45; dim.AutoButtonColor = false
 
-	local panel = frame("Panel", g, UDim2.fromOffset(460,400), UDim2.new(0.5,0,0.5,0), AC, 0, RADIUS)
-	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, C.PurpleDark, 2, 0)
+	-- Тёмное стекло вместо сплошной фиолетовой плашки — в стиле остального UI
+	local panel = frame("Panel", g, UDim2.fromOffset(460,400), UDim2.new(0.5,0,0.5,0), C.Card, 0.06, RADIUS)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, AC, 1.5, 0.15)
 
 	local hdr = brightHeader(panel, 50, AC, C.PurpleDark)
 	lbl("Title", panel, "🌀  Rebirth", UDim2.new(0.75,0,0,50), UDim2.new(0,14,0,0), C.White, true, 20)
@@ -738,12 +755,12 @@ do
 
 	local desc = lbl("RebirthDesc", panel,
 		"Reset your progress and start again — but this time you'll be stronger.\nEach rebirth multiplies your fish value permanently.",
-		UDim2.new(1,-24,0,40), UDim2.fromOffset(12,58), C.White, false, 13)
+		UDim2.new(1,-24,0,40), UDim2.fromOffset(12,58), C.TextDim, false, 13)
 	desc.TextWrapped = true; desc.TextYAlignment = Enum.TextYAlignment.Top
 
-	-- Белая карточка со статистикой
-	local rs = frame("RebirthStats", panel, UDim2.new(1,-24,0,86), UDim2.fromOffset(12,102), C.Card, 0.08, 8)
-	stroke(rs, C.CardStroke, 1.5, 0)
+	-- Тёмная карточка со статистикой
+	local rs = frame("RebirthStats", panel, UDim2.new(1,-24,0,86), UDim2.fromOffset(12,102), Color3.fromRGB(14,16,22), 0.15, 8)
+	stroke(rs, C.CardStroke, 1.5, 0.2)
 	local statNames = {"CurrentCoins","TotalCatch","RebirthCount"}
 	local statLabels = {"🪙 Coins","🐟 Total Caught","🌀 Rebirths"}
 	for i, sn in ipairs(statNames) do
@@ -754,8 +771,8 @@ do
 	end
 
 	-- Карточка с условиями для следующего rebirth
-	local rq = frame("Requirements", panel, UDim2.new(1,-24,0,58), UDim2.fromOffset(12,192), Color3.fromRGB(100,50,180), 0.1, 8)
-	stroke(rq, Color3.fromRGB(160,100,230), 1, 0.3)
+	local rq = frame("Requirements", panel, UDim2.new(1,-24,0,58), UDim2.fromOffset(12,192), Color3.fromRGB(40,24,64), 0.08, 8)
+	stroke(rq, Color3.fromRGB(160,100,230), 1.5, 0.2)
 	lbl("ReqTitle", rq, "Requirement for next Rebirth", UDim2.new(1,-12,0,18), UDim2.fromOffset(6,4), Color3.fromRGB(220,200,255), true, 11)
 	local rqv = lbl("ReqValue", rq, "🪙 Need 50,000 coins", UDim2.new(1,-12,0,22), UDim2.fromOffset(6,24), C.White, true, 14)
 	local rqr = lbl("ReqReward", rq, "Reward: ...", UDim2.new(1,-12,0,14), UDim2.fromOffset(6,44), Color3.fromRGB(200,180,255), false, 10)

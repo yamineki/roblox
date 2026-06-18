@@ -20,6 +20,7 @@ local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
 local RunService        = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 
 local RodData     = require(ReplicatedStorage.Modules.RodData)
 local DataService = require(script.Parent.Parent.Services.DataService)
@@ -119,6 +120,7 @@ for _, z in ipairs(ZONE_DATA) do
     billboard.AlwaysOnTop  = false
     billboard.LightInfluence = 0.2
     billboard.Parent       = part
+    CollectionService:AddTag(billboard, "FixedSizeBillboard")
 
     local lbl = Instance.new("TextLabel")
     lbl.Size                  = UDim2.fromScale(1, 1)
@@ -279,6 +281,7 @@ local function spawnFish(z, index)
     bb.AlwaysOnTop    = false
     bb.LightInfluence = 0.1
     bb.MaxDistance    = 15
+    CollectionService:AddTag(bb, "FixedSizeBillboard")
     bb.Parent         = primary
 
     local qLbl = Instance.new("TextLabel")

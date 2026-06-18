@@ -5,6 +5,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CollectionService = game:GetService("CollectionService")
 local Strings = require(ReplicatedStorage.Modules.Strings)
 
 -- Дождаться папки Remotes (создаётся RemoteSetup в ServerMain)
@@ -80,6 +81,7 @@ for _, cfg in ipairs(NPC_CONFIG) do
     billboard.StudsOffset = Vector3.new(0, 3, 0)
     billboard.AlwaysOnTop = false
     billboard.Parent      = npcPart
+    CollectionService:AddTag(billboard, "FixedSizeBillboard")
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size                = UDim2.new(1, 0, 1, 0)
@@ -151,6 +153,7 @@ for _, z in ipairs(zoneKeeperData) do
     kbLabel.StudsOffset = Vector3.new(0, 3.5, 0)
     kbLabel.AlwaysOnTop = false
     kbLabel.Parent = keeper
+    CollectionService:AddTag(kbLabel, "FixedSizeBillboard")
 
     local kTxt = Instance.new("TextLabel")
     kTxt.Size = UDim2.fromScale(1, 1)

@@ -13,14 +13,14 @@ GameConfig.Fishing = {
     MinProgress      = 0,
 
     -- Stress Meter
-    StressStartDelay = 5,        -- секунды до начала Stress Meter
-    StressInterval   = 10,       -- каждые N секунд
-    StressSpeedBonus = 0.10,     -- +10% скорость рыбы
+    StressStartDelay = 6,        -- секунды до начала Stress Meter
+    StressInterval   = 14,       -- каждые N секунд
+    StressSpeedBonus = 0.06,     -- +6% скорость рыбы
 
     -- Hook Phase
-    HookArrowBaseSpeed  = 90,    -- градусов/сек базовая скорость стрелки
-    HookZoneAngle       = 75,    -- ширина зелёной зоны в градусах
-    HookPerfectWindow   = 15,    -- окно Perfect внутри зелёной зоны (центр ±7.5°)
+    HookArrowBaseSpeed  = 65,    -- градусов/сек базовая скорость стрелки (было 90 — слишком быстро для новичков)
+    HookZoneAngle       = 95,    -- ширина зелёной зоны в градусах (было 75)
+    HookPerfectWindow   = 20,    -- окно Perfect внутри зелёной зоны (было 15)
 
     -- Perfect Hook бонусы
     PerfectHookValueBonus    = 0.10,  -- +10% стоимость
@@ -182,6 +182,19 @@ GameConfig.Zones = {
     Abyss       = { order = 5, unlockCost = 100000, minRebirth = 1, depthLabel = "1500 – 3000 м" },
 }
 GameConfig.ZoneOrder = { "SunnyReef", "CoralTrench", "OpenOcean", "DarkWaters", "Abyss" }
+
+-- ══ СЛОЖНОСТЬ МИНИ-ИГРЫ ВЫТЯГИВАНИЯ: ЗОНА (РЫБА) + УДОЧКА ══
+-- > 1 = сложнее (быстрее/жёстче таймингы), < 1 = легче.
+-- Глубже зона → резвее рыба; лучше удочка (greenZoneBonus/catchRateBonus) → легче ловить.
+function GameConfig.GetCatchDifficulty(zoneId, rod)
+    local zoneOrder = (GameConfig.Zones[zoneId] and GameConfig.Zones[zoneId].order) or 1
+    local fishDifficulty = 1 + (zoneOrder - 1) * 0.12
+    local rodEase = 1
+    if rod then
+        rodEase = 1 / (1 + (rod.catchRateBonus or 0) + (rod.greenZoneBonus or 0))
+    end
+    return fishDifficulty * rodEase
+end
 
 -- ══ СУНДУКИ КОЛЛЕКЦИИ (FishDex completion) ══
 -- За поимку ВСЕХ видов зоны — единоразовая награда

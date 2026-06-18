@@ -106,6 +106,11 @@ local typing = false
 local skipRequested = false
 local typeToken = 0
 
+-- Базовые размер/позиция панели (центр экрана, см. UIBuilder.lua) — захватываем
+-- один раз при загрузке, чтобы анимации открытия/закрытия могли к ним возвращаться
+local basePanelSize = panel and panel.Size
+local basePanelPos  = panel and panel.Position
+
 -- ══ TYPEWRITER ══
 local function typeLine(text)
     typing = true
@@ -139,6 +144,16 @@ end
 local function showLine(index)
     currentLineIndex = index
     typeLine(currentConfig.lines[index])
+
+    -- "Живая" реакция портрета на каждую новую реплику — лёгкий punch-эффект,
+    -- чтобы диалог не выглядел статичным текстовым полем
+    if portrait then
+        portrait.Size = UDim2.fromOffset(108, 108)
+        portrait.Rotation = (index % 2 == 0) and -3 or 3
+        TweenService:Create(portrait,
+            TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            { Size = UDim2.fromOffset(120, 120), Rotation = 0 }):Play()
+    end
 end
 
 -- Advance: skip typewriter OR go to next line
@@ -154,6 +169,8 @@ local function advance()
 end
 
 -- ══ OPEN / CLOSE ══
+-- Панель всегда центрирована (см. UIBuilder.lua) — анимации открытия/закрытия
+-- теперь "pop" по масштабу + лёгкий поворот, а не сдвиг с правого края экрана
 local function closeDialog(callback)
     if not gui then return end
     isOpen = false
@@ -161,12 +178,15 @@ local function closeDialog(callback)
     playSound("Close")
 
     TweenService:Create(panel,
-        TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        { Position = UDim2.new(1.6, -32, 0.5, 0) }):Play()
+        TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+        { Size = UDim2.fromOffset(basePanelSize.X.Offset * 0.8, basePanelSize.Y.Offset * 0.8),
+          Rotation = 6 }):Play()
 
-    task.delay(0.3, function()
+    task.delay(0.22, function()
         gui.Enabled = false
-        panel.Position = UDim2.new(1, -32, 0.5, 0)
+        panel.Position = basePanelPos
+        panel.Size = basePanelSize
+        panel.Rotation = 0
         if callback then callback() end
     end)
 end
@@ -187,10 +207,12 @@ local function openDialog(npcId)
     choice2.Text = config.negativeChoice or "Maybe later"
     choicesRow.Visible = false
 
-    panel.Position = UDim2.new(1.6, -32, 0.5, 0)
+    panel.Position = basePanelPos
+    panel.Size = UDim2.fromOffset(basePanelSize.X.Offset * 0.8, basePanelSize.Y.Offset * 0.8)
+    panel.Rotation = -6
     TweenService:Create(panel,
-        TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-        { Position = UDim2.new(1, -32, 0.5, 0) }):Play()
+        TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        { Size = basePanelSize, Rotation = 0 }):Play()
 
     showLine(1)
 end
