@@ -5,7 +5,8 @@ local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ShopBridge = require(ReplicatedStorage.Modules.ShopBridge)
+local ShopBridge  = require(ReplicatedStorage.Modules.ShopBridge)
+local GameConfig  = require(ReplicatedStorage.Modules.GameConfig)
 local okFX, SoundFX = pcall(function() return require(ReplicatedStorage.Modules.SoundFX) end)
 local function playSound(n) if okFX and SoundFX then SoundFX.Play(n) end end
 
@@ -24,6 +25,9 @@ local closeBtn      = panel:WaitForChild("CloseBtn")
 local cancelBtn     = panel:WaitForChild("CancelBtn")
 local confirmBtn    = panel:WaitForChild("ConfirmRebirth")
 local statsFrame    = panel:WaitForChild("RebirthStats")
+local reqFrame       = panel:WaitForChild("Requirements")
+local reqValueLbl     = reqFrame:WaitForChild("ReqValue")
+local reqRewardLbl    = reqFrame:WaitForChild("ReqReward")
 
 local function getStatRow(name)
     local row = statsFrame:FindFirstChild(name)
@@ -37,9 +41,23 @@ local rebirthVal = getStatRow("RebirthCount")
 
 local function populateStats(data)
     if not data then return end
+    local rebirthLevel = data.rebirthLevel or 0
     if coinVal    then coinVal.Text    = tostring(data.coins or 0) end
-    if catchVal   then catchVal.Text   = tostring(data.totalFishCaught or 0) end
-    if rebirthVal then rebirthVal.Text = tostring(data.rebirthCount or 0) end
+    if catchVal   then catchVal.Text   = tostring(data.stats and data.stats.totalFishCaught or 0) end
+    if rebirthVal then rebirthVal.Text = tostring(rebirthLevel) end
+
+    if rebirthLevel >= 10 then
+        reqValueLbl.Text = "🏆 Max rebirth level reached"
+        reqRewardLbl.Text = ""
+        confirmBtn.Active = false
+        confirmBtn.Text = "Max Level"
+    else
+        local nextLevel = rebirthLevel + 1
+        local cost = GameConfig.GetRebirthCost(nextLevel)
+        local rewardInfo = GameConfig.Rebirth[nextLevel]
+        reqValueLbl.Text = "🪙 Need " .. string.format("%d", cost) .. " coins"
+        reqRewardLbl.Text = "Reward: " .. (rewardInfo and rewardInfo.description or "—")
+    end
 end
 
 local function openPanel()

@@ -28,6 +28,19 @@ local playerCoins = 0
 local ShopGui = PlayerGui:WaitForChild("ShopGui", 15)
 local isShopOpen = false
 
+-- ══ ПРЕВЬЮ УДОЧКИ ══
+local function showRodPreview(rod)
+    if not ShopGui then return end
+    local preview = ShopGui:FindFirstChild("RodPreview", true)
+    if not preview or not rod then return end
+    local icon = preview:FindFirstChild("Icon", true)
+    local nameLbl = preview:FindFirstChild("PreviewName", true)
+    local descLbl = preview:FindFirstChild("PreviewDesc", true)
+    if icon then icon.Image = rod.icon ~= "" and rod.icon or "" end
+    if nameLbl then nameLbl.Text = rod.displayName end
+    if descLbl then descLbl.Text = rod.description or "" end
+end
+
 -- Обновить монеты из HUD (слушаем CoinsUpdated)
 Remotes:WaitForChild("CoinsUpdated").OnClientEvent:Connect(function(amount)
     playerCoins = amount
@@ -92,10 +105,13 @@ local function rebuildRodGrid()
         bonusLabel.TextWrapped = true
         bonusLabel.Parent = card
 
+        card.MouseEnter:Connect(function() showRodPreview(rod) end)
+
         local isOwned = (rod.price == 0)
         for _, owned in ipairs(ownedRods) do
             if owned == rodId then isOwned = true; break end
         end
+        if rodId == equippedRod then showRodPreview(rod) end
 
         local actionButton = Instance.new("TextButton")
         actionButton.Name = "ActionButton"

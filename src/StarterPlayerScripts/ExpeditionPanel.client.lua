@@ -18,16 +18,26 @@ local StartExpedition     = Remotes:WaitForChild("StartExpedition")
 local CollectExpedition   = Remotes:WaitForChild("CollectExpedition")
 local ExpeditionStarted   = Remotes:WaitForChild("ExpeditionStarted")
 local ExpeditionComplete  = Remotes:WaitForChild("ExpeditionComplete")
+local GetShopData         = Remotes:WaitForChild("GetShopData")
 
 local gui = PlayerGui:WaitForChild("ExpeditionPanel", 15)
 if not gui then return end
 
-local panel    = gui:WaitForChild("Panel")
-local closeBtn = panel:WaitForChild("CloseBtn")
-local slotCont = panel:WaitForChild("SlotContainer")
-local timerLbl = panel:WaitForChild("TimerLabel")
+local panel       = gui:WaitForChild("Panel")
+local closeBtn    = panel:WaitForChild("CloseBtn")
+local slotCont    = panel:WaitForChild("SlotContainer")
+local timerLbl    = panel:WaitForChild("TimerLabel")
+local balanceLabel = panel:WaitForChild("BalanceLabel")
 
-local SLOT_COUNT = 4
+Remotes:WaitForChild("CoinsUpdated").OnClientEvent:Connect(function(amount)
+    balanceLabel.Text = "🪙 " .. tostring(amount)
+end)
+
+local SLOT_COUNT = 3
+local SLOT_DURATION = { "Short", "Medium", "Long" }
+local LOCKED_GAMEPASS = "ExtraAFKSlots"
+local hasExtraSlotPass = false
+
 local slots = {}
 for i = 1, SLOT_COUNT do
     local sl = slotCont:FindFirstChild("Slot"..i)
@@ -37,13 +47,12 @@ for i = 1, SLOT_COUNT do
             status    = sl:FindFirstChild("SlotStatus"),
             startBtn  = sl:FindFirstChild("StartBtn"),
             collectBtn= sl:FindFirstChild("CollectBtn"),
+            glow      = sl:FindFirstChild("ActiveGlow"),
         }
     end
 end
 
-local expeditionData = {}  -- server status
-
-local DURATION_OPTIONS = { short = 300, medium = 1800, long = 7200 }
+local expeditionData = {}  -- server status (array of active expeditions)
 
 local function formatTime(s)
     if s <= 0 then return "Ready!" end
@@ -57,22 +66,38 @@ end
 local function refreshUI(data)
     expeditionData = data or {}
     for i, slot in ipairs(slots) do
-        local info = expeditionData[i] or { status = "idle" }
+        local locked = (i == 3) and not hasExtraSlotPass
+        local exp = expeditionData[i]
+        local status
+        if locked then
+            status = "locked"
+        elseif not exp then
+            status = "idle"
+        elseif os.time() >= (exp.endTime or 0) then
+            status = "complete"
+        else
+            status = "running"
+        end
+
         if slot.status then
-            if info.status == "idle" then
+            if status == "locked" then
+                slot.status.Text = "🔒 Requires +2 AFK Slots gamepass"
+                slot.status.TextColor3 = Color3.fromRGB(255,160,160)
+            elseif status == "idle" then
                 slot.status.Text = "Empty — ready to launch"
                 slot.status.TextColor3 = Color3.fromRGB(180,220,255)
-            elseif info.status == "running" then
-                local rem = math.max(0, (info.endsAt or 0) - os.time())
+            elseif status == "running" then
+                local rem = math.max(0, (exp.endTime or 0) - os.time())
                 slot.status.Text = "Underway: " .. formatTime(rem)
                 slot.status.TextColor3 = Color3.fromRGB(255,220,100)
-            elseif info.status == "complete" then
+            elseif status == "complete" then
                 slot.status.Text = "✓ Complete — collect now!"
                 slot.status.TextColor3 = Color3.fromRGB(100,240,130)
             end
         end
-        if slot.startBtn   then slot.startBtn.Visible   = info.status == "idle" end
-        if slot.collectBtn then slot.collectBtn.Visible  = info.status == "complete" end
+        if slot.startBtn   then slot.startBtn.Visible   = (status == "idle") end
+        if slot.collectBtn then slot.collectBtn.Visible = (status == "complete") end
+        if slot.glow        then slot.glow.Enabled = (status == "running" or status == "complete") end
     end
 end
 
@@ -80,8 +105,9 @@ end
 for i, slot in ipairs(slots) do
     if slot.startBtn then
         slot.startBtn.MouseButton1Click:Connect(function()
+            if i == 3 and not hasExtraSlotPass then return end
             playSound("Click")
-            pcall(function() StartExpedition:FireServer(i, "medium") end)
+            pcall(function() StartExpedition:FireServer(SLOT_DURATION[i]) end)
             task.wait(0.4)
             local ok, data = pcall(function() return GetExpeditionStatus:InvokeServer() end)
             if ok and data then refreshUI(data) end
@@ -105,17 +131,16 @@ task.spawn(function()
         if gui.Enabled then
             local now = os.time()
             for i, slot in ipairs(slots) do
-                local info = expeditionData[i]
-                if info and info.status == "running" and slot.status then
-                    local rem = math.max(0, (info.endsAt or 0) - now)
+                local exp = expeditionData[i]
+                if exp and slot.status and now < (exp.endTime or 0) then
+                    local rem = math.max(0, (exp.endTime or 0) - now)
                     slot.status.Text = "Underway: " .. formatTime(rem)
-                    if rem <= 0 then
-                        info.status = "complete"
-                        slot.status.Text = "✓ Complete — collect now!"
-                        slot.status.TextColor3 = Color3.fromRGB(100,240,130)
-                        if slot.startBtn   then slot.startBtn.Visible   = false end
-                        if slot.collectBtn then slot.collectBtn.Visible  = true  end
-                    end
+                elseif exp and slot.status and now >= (exp.endTime or 0) and slot.collectBtn and not slot.collectBtn.Visible then
+                    slot.status.Text = "✓ Complete — collect now!"
+                    slot.status.TextColor3 = Color3.fromRGB(100,240,130)
+                    if slot.startBtn   then slot.startBtn.Visible   = false end
+                    if slot.collectBtn then slot.collectBtn.Visible  = true  end
+                    if slot.glow        then slot.glow.Enabled = true end
                 end
             end
         end
@@ -139,6 +164,10 @@ local function openPanel()
         { Position = UDim2.new(0.5,0,0.5,0) }):Play()
     playSound("Open")
     task.spawn(function()
+        local okShop, shopData = pcall(function() return GetShopData:InvokeServer() end)
+        if okShop and shopData and shopData.owned then
+            hasExtraSlotPass = shopData.owned[LOCKED_GAMEPASS] == true
+        end
         local ok, data = pcall(function() return GetExpeditionStatus:InvokeServer() end)
         if ok and data then refreshUI(data) end
     end)

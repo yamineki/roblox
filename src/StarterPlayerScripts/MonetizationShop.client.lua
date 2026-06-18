@@ -31,10 +31,16 @@ local tabGamePasses= tabRow:WaitForChild("TabGP")
 local tabProducts  = tabRow:WaitForChild("TabProd")
 local scroll       = panel:WaitForChild("Items")
 local closeBtn     = panel:WaitForChild("CloseBtn")
+local balanceLabel = panel:WaitForChild("BalanceLabel")
 
 -- ══ СОСТОЯНИЕ ══
 local currentTab = "gamepasses"
 local ownedCache = {}
+
+-- ══ БАЛАНС ══
+Remotes:WaitForChild("CoinsUpdated").OnClientEvent:Connect(function(amount)
+    balanceLabel.Text = "🪙 " .. tostring(amount)
+end)
 
 -- ══ СОЗДАТЬ КАРТОЧКУ ══
 local function makeCard(cfg, key, isOwned, isProduct, order)

@@ -19,38 +19,43 @@ local SellAllRemote = Remotes:WaitForChild("SellAll")
 local gui = PlayerGui:WaitForChild("SellPanel", 15)
 if not gui then return end
 
-local panel      = gui:WaitForChild("Panel")
-local closeBtn   = panel:WaitForChild("CloseBtn")
-local fishList   = panel:WaitForChild("FishList")
-local summaryBar = panel:WaitForChild("SummaryBar")
-local totalLbl   = summaryBar:WaitForChild("TotalValue")
-local sellSelBtn = summaryBar:WaitForChild("SellSelected")
-local sellAllBtn = summaryBar:WaitForChild("SellAll")
+local panel        = gui:WaitForChild("Panel")
+local closeBtn     = panel:WaitForChild("CloseBtn")
+local fishList     = panel:WaitForChild("FishList")
+local balanceLabel = panel:WaitForChild("BalanceLabel")
+local summaryBar   = panel:WaitForChild("SummaryBar")
+local totalLbl     = summaryBar:WaitForChild("TotalValue")
+local sellSelBtn   = summaryBar:WaitForChild("SellSelected")
+local sellAllBtn   = summaryBar:WaitForChild("SellAll")
 
-local selected = {}   -- index → true
-local inventory = {}  -- cached fish list
+Remotes:WaitForChild("CoinsUpdated").OnClientEvent:Connect(function(amount)
+    balanceLabel.Text = "🪙 " .. tostring(amount)
+end)
 
-local function calcTotal()
-    local t = 0
-    for idx, _ in pairs(selected) do
-        local entry = inventory[idx]
-        if entry then t = t + (entry.value or 0) end
-    end
-    return t
-end
+local heldIdx   = nil   -- index of the single "held" fish picked to sell alone
+local inventory = {}    -- cached fish list
 
 local function updateSummary()
-    local total = calcTotal()
-    totalLbl.Text = "Total: 🪙 " .. total
+    local entry = heldIdx and inventory[heldIdx]
+    if entry then
+        totalLbl.Text = "Held fish: 🪙 " .. (entry.value or 0)
+        sellSelBtn.Active = true
+    else
+        local allTotal = 0
+        for _, e in ipairs(inventory) do allTotal = allTotal + (e.value or 0) end
+        totalLbl.Text = "All fish worth: 🪙 " .. allTotal
+        sellSelBtn.Active = false
+    end
 end
 
 local function buildList()
     for _, ch in ipairs(fishList:GetChildren()) do
         if ch:IsA("Frame") then ch:Destroy() end
     end
-    selected = {}
+    heldIdx = nil
     updateSummary()
 
+    local rowButtons = {}
     for i, entry in ipairs(inventory) do
         local row = Instance.new("Frame")
         row.Name = "Row"..i
@@ -96,16 +101,22 @@ local function buildList()
         local sc = Instance.new("UICorner"); sc.CornerRadius = UDim.new(0,6); sc.Parent = selBtn
 
         local idx = i
+        rowButtons[idx] = { btn = selBtn, row = row }
         selBtn.MouseButton1Click:Connect(function()
             playSound("Click")
-            if selected[idx] then
-                selected[idx] = nil
+            if heldIdx == idx then
+                heldIdx = nil
                 selBtn.Text = "Select"
                 selBtn.BackgroundColor3 = Color3.fromRGB(70,190,100)
                 row.BackgroundTransparency = 0.15
             else
-                selected[idx] = true
-                selBtn.Text = "✓"
+                if heldIdx and rowButtons[heldIdx] then
+                    rowButtons[heldIdx].btn.Text = "Select"
+                    rowButtons[heldIdx].btn.BackgroundColor3 = Color3.fromRGB(70,190,100)
+                    rowButtons[heldIdx].row.BackgroundTransparency = 0.15
+                end
+                heldIdx = idx
+                selBtn.Text = "✓ Held"
                 selBtn.BackgroundColor3 = Color3.fromRGB(40,150,70)
                 row.BackgroundTransparency = 0.5
             end
@@ -143,12 +154,8 @@ end
 closeBtn.MouseButton1Click:Connect(closePanel)
 
 sellSelBtn.MouseButton1Click:Connect(function()
-    for idx, _ in pairs(selected) do
-        local entry = inventory[idx]
-        if entry then
-            pcall(function() SellFish:FireServer(idx) end)
-        end
-    end
+    if not heldIdx or not inventory[heldIdx] then return end
+    pcall(function() SellFish:FireServer(heldIdx) end)
     playSound("Purchase")
     task.wait(0.4)
     openPanel()
