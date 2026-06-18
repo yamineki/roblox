@@ -18,15 +18,15 @@ local StarterGui = game:GetService("StarterGui")
 local C = {
 	-- Общие цвета
 	White      = Color3.fromRGB(255, 255, 255),
-	Card       = Color3.fromRGB(245, 248, 255),  -- светлая карточка
-	CardStroke = Color3.fromRGB(210, 220, 235),  -- обводка карточки
-	Text       = Color3.fromRGB(30, 35, 50),     -- тёмный текст на светлом фоне
-	TextDim    = Color3.fromRGB(100, 110, 135),  -- вторичный текст
+	Card       = Color3.fromRGB(22, 24, 30),     -- тёмная стеклянная карточка
+	CardStroke = Color3.fromRGB(80, 200, 190),   -- светящаяся teal-обводка
+	Text       = Color3.fromRGB(235, 238, 245),  -- светлый текст на тёмном фоне
+	TextDim    = Color3.fromRGB(150, 158, 175),  -- приглушённый светло-серо-синий
 	TextLight  = Color3.fromRGB(240, 245, 255),  -- светлый текст на цветном фоне
 	CloseBtn   = Color3.fromRGB(220, 70, 70),    -- кнопка закрытия
 
 	-- Акцентные цвета панелей
-	Teal       = Color3.fromRGB(55, 175, 195),   -- SellPanel, MainHUD coins
+	Teal       = Color3.fromRGB(50, 165, 180),   -- SellPanel, MainHUD coins
 	TealDark   = Color3.fromRGB(35, 140, 160),
 	TealDarker = Color3.fromRGB(25, 110, 130),
 
@@ -47,7 +47,7 @@ local C = {
 	OrangeDark = Color3.fromRGB(185, 120, 30),
 
 	Coral      = Color3.fromRGB(215, 90, 80),    -- danger / stress
-	Gold       = Color3.fromRGB(255, 200, 60),   -- монеты
+	Gold       = Color3.fromRGB(235, 190, 80),   -- монеты (слегка приглушено)
 
 	-- Цвета игрового процесса (минигра остаётся тёмной)
 	GreenZone  = Color3.fromRGB(90, 200, 110),
@@ -55,7 +55,7 @@ local C = {
 	PanelBG    = Color3.fromRGB(38, 40, 46),
 	Stroke     = Color3.fromRGB(70, 75, 85),
 }
-local RADIUS = 10   -- pill-style corners for all main panels
+local RADIUS = 10   -- pill-style corners for all main panels (already in 8-12px range)
 local BRAD   = 8    -- button corner radius
 
 -- ══════════════════════════════════════════════════════════════
@@ -212,7 +212,7 @@ do
 	frame("TapCenterLine", tapBar, UDim2.fromOffset(2,40), UDim2.new(0.5,-1,0,0), Color3.fromRGB(255,255,255), 0.6)
 
 	-- Result Phase
-	local rp = frame("ResultPhase", g, UDim2.fromOffset(400,550), UDim2.new(0.5,-200,0.5,-275), C.Card, 0, RADIUS)
+	local rp = frame("ResultPhase", g, UDim2.fromOffset(400,550), UDim2.new(0.5,-200,0.5,-275), C.Card, 0.08, RADIUS)
 	rp.Visible = false; stroke(rp, C.CardStroke, 2, 0)
 	local rarityBanner = frame("RarityBanner", rp, UDim2.new(1,0,0,8), UDim2.new(0,0,0,0), C.Teal, 0, RADIUS)
 	rarityBanner.Name = "RarityBanner"
@@ -284,9 +284,9 @@ do
 	closeX(hdr)
 
 	-- Превью выбранной удочки (увеличенная иконка + описание)
-	local preview = frame("RodPreview", panel, UDim2.new(1,-16,0,84), UDim2.fromOffset(8,58), C.Card, 0, 8)
+	local preview = frame("RodPreview", panel, UDim2.new(1,-16,0,84), UDim2.fromOffset(8,58), C.Card, 0.08, 8)
 	stroke(preview, C.CardStroke, 1.5, 0)
-	local pvIconHolder = frame("IconHolder", preview, UDim2.fromOffset(72,72), UDim2.fromOffset(6,6), Color3.fromRGB(225,235,245), 0, 8)
+	local pvIconHolder = frame("IconHolder", preview, UDim2.fromOffset(72,72), UDim2.fromOffset(6,6), Color3.fromRGB(40,44,52), 0, 8)
 	local pvIcon = img("Icon", pvIconHolder, UDim2.fromScale(0.85,0.85), UDim2.fromScale(0.075,0.075))
 	local pvName = lbl("PreviewName", preview, "Select a rod", UDim2.new(1,-90,0,24), UDim2.fromOffset(86,8), C.Text, true, 17)
 	pvName.TextXAlignment = Enum.TextXAlignment.Left
@@ -294,18 +294,30 @@ do
 	pvDesc.TextXAlignment = Enum.TextXAlignment.Left; pvDesc.TextYAlignment = Enum.TextYAlignment.Top; pvDesc.TextWrapped = true
 
 	-- Белая область карточек
-	local content = frame("Content", panel, UDim2.new(1,-16,1,-198), UDim2.fromOffset(8,150), C.Card, 0, 8)
+	local content = frame("Content", panel, UDim2.new(1,-16,1,-198), UDim2.fromOffset(8,150), C.Card, 0.08, 8)
 	stroke(content, C.CardStroke, 1.5, 0)
 
 	local grid = Instance.new("ScrollingFrame"); grid.Name = "RodGrid"
 	grid.Size = UDim2.fromScale(1,1); grid.Position = UDim2.new()
 	grid.BackgroundTransparency = 1; grid.BorderSizePixel = 0
 	grid.ScrollBarThickness = 4; grid.ScrollBarImageColor3 = C.GreenDark
+	grid.ScrollingDirection = Enum.ScrollingDirection.X
 	grid.CanvasSize = UDim2.new(0,0,0,0); grid.Parent = content
-	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.new(0.48,0,0,120)
-	gl.CellPadding = UDim2.new(0.02,0,0,10); gl.SortOrder = Enum.SortOrder.LayoutOrder
+	local gl = Instance.new("UIListLayout"); gl.FillDirection = Enum.FillDirection.Horizontal
+	gl.Padding = UDim.new(0,10); gl.SortOrder = Enum.SortOrder.LayoutOrder
+	gl.VerticalAlignment = Enum.VerticalAlignment.Center
 	local gpad = Instance.new("UIPadding"); gpad.PaddingLeft = UDim.new(0,6); gpad.PaddingTop = UDim.new(0,6)
 	gpad.Parent = grid; gl.Parent = grid
+
+	-- Кнопки навигации карусели (поверх RodGrid, по центру области Content)
+	local navLeft = btn("NavLeft", panel, "◀", UDim2.fromOffset(34,46), UDim2.new(0,10,0,150), AC, C.White, 18)
+	navLeft.AnchorPoint = Vector2.new(0,0); navLeft.Position = UDim2.new(0,10,0,150) + UDim2.new(0,0,0,(580-198)/2 - 23)
+	navLeft.ZIndex = 10
+	corner(navLeft, BRAD); stroke(navLeft, C.GreenDark, 1.5, 0)
+	local navRight = btn("NavRight", panel, "▶", UDim2.fromOffset(34,46), UDim2.new(1,-44,0,150), AC, C.White, 18)
+	navRight.Position = UDim2.new(1,-44,0,150) + UDim2.new(0,0,0,(580-198)/2 - 23)
+	navRight.ZIndex = 10
+	corner(navRight, BRAD); stroke(navRight, C.GreenDark, 1.5, 0)
 
 	local cb = btn("CloseButton", panel, "✕  Close", UDim2.fromOffset(200,40), UDim2.new(0.5,0,1,-50), C.CloseBtn, C.White, 15)
 	cb.AnchorPoint = Vector2.new(0.5,0); corner(cb, BRAD); stroke(cb, Color3.fromRGB(170,40,40), 1.5, 0)
@@ -348,7 +360,7 @@ do
 
 	for day = 1, 7 do
 		local x = startX + (day-1)*(CARD_W+CARD_GAP)
-		local card = frame("Day"..day, panel, UDim2.fromOffset(CARD_W,CARD_H), UDim2.fromOffset(x,90), C.Card, 0, 8)
+		local card = frame("Day"..day, panel, UDim2.fromOffset(CARD_W,CARD_H), UDim2.fromOffset(x,90), C.Card, 0.08, 8)
 		local cs = stroke(card, C.CardStroke, 1.5, 0); cs.Name = "CardStroke"
 		local gs = stroke(card, C.White, 2, 1); gs.Name = "GlowStroke"
 
@@ -396,7 +408,7 @@ do
 	lbl("Title", panel, "🌀  Zone Travel", UDim2.new(0.8,0,0,50), UDim2.new(0,14,0,0), C.White, true, 20)
 	closeX(panel)
 
-	local list = frame("List", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), C.Card, 0, 8)
+	local list = frame("List", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), C.Card, 0.08, 8)
 	stroke(list, C.CardStroke, 1.5, 0)
 	local ul = Instance.new("UIListLayout"); ul.Padding = UDim.new(0,6); ul.SortOrder = Enum.SortOrder.LayoutOrder
 	local lpad = Instance.new("UIPadding"); lpad.PaddingLeft = UDim.new(0,6); lpad.PaddingTop = UDim.new(0,6)
@@ -432,7 +444,7 @@ do
 	-- Область со списком (белый фон применён прямо на скролл, без лишней обёртки)
 	local scroll = Instance.new("ScrollingFrame"); scroll.Name = "Items"
 	scroll.Size = UDim2.new(1,-16,1,-172); scroll.Position = UDim2.fromOffset(8,104)
-	scroll.BackgroundColor3 = C.Card; scroll.BackgroundTransparency = 0; scroll.BorderSizePixel = 0
+	scroll.BackgroundColor3 = C.Card; scroll.BackgroundTransparency = 0.08; scroll.BorderSizePixel = 0
 	scroll.ScrollBarThickness = 4; scroll.ScrollBarImageColor3 = C.PurpleDark
 	scroll.CanvasSize = UDim2.new(0,0,0,0); scroll.Parent = panel
 	corner(scroll, 8); stroke(scroll, C.CardStroke, 1.5, 0)
@@ -464,9 +476,10 @@ do
 	local mf = frame("MainFrame", g, UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0), 1)
 
 	-- Константы (должны совпадать с CustomInventory.client.lua)
-	local SS, SG, SP, HRC = 60, 6, 8, 5
-	local hotbarW = SP*2 + HRC*SS + (HRC-1)*SG  -- 356
-	local hotbarH = SP*2 + SS                    -- 76
+	-- HRC теперь = 8 — единый хотбар (удочки + рыбы), не только удочки
+	local SS, SG, SP, HRC = 60, 6, 8, 8
+	local hotbarW = SP*2 + HRC*SS + (HRC-1)*SG
+	local hotbarH = SP*2 + SS
 
 	local hbg = frame("HotbarBG", mf, UDim2.fromOffset(hotbarW, hotbarH),
 		UDim2.new(0.5, -hotbarW/2, 1, -(hotbarH+12)), AC, 0, RADIUS)
@@ -474,7 +487,7 @@ do
 
 	for i = 1, HRC do
 		local x = SP + (i-1)*(SS+SG)
-		local sl = frame("RodSlot_"..i, hbg, UDim2.fromOffset(SS,SS), UDim2.fromOffset(x,SP), C.Card, 0.05, 8)
+		local sl = frame("Slot_"..i, hbg, UDim2.fromOffset(SS,SS), UDim2.fromOffset(x,SP), C.Card, 0.05, 8)
 		stroke(sl, C.BlueDark, 1.5, 0.3)
 		local ic = img("Icon", sl, UDim2.new(0.75,0,0.75,0), UDim2.fromScale(0.5,0.4))
 		ic.AnchorPoint = Vector2.new(0.5,0.5); ic.Visible = false
@@ -488,20 +501,20 @@ do
 		b.BackgroundTransparency = 1; b.ZIndex = 5
 	end
 
-	-- Кнопка переключения инвентаря рыб
-	local fbtn = btn("FishInventoryToggle", mf, "🐠 ▲",
+	-- Кнопка переключения рюкзака (overflow-слотов)
+	local fbtn = btn("BackpackToggle", mf, "🎒 ▲",
 		UDim2.fromOffset(72, 42), UDim2.new(0.5, hotbarW/2+12, 1, -(hotbarH/2+21+12)),
 		AC, C.White, 14)
 	corner(fbtn, RADIUS); stroke(fbtn, C.BlueDark, 2, 0)
 
-	-- Fish Panel
+	-- Backpack Panel (overflow) — в v1 показывает только избыточных рыб (8+)
 	local FSS = 66
 	local FCOLS, FROWS = 5, 3
 	local fpW = FCOLS*(FSS+SG)+SG + 200
 	local fpH = FROWS*(FSS+SG)+SG + 52
 	local fpCloseY = -(hotbarH+8)
 
-	local fp = frame("FishPanel", mf, UDim2.fromOffset(fpW,fpH),
+	local fp = frame("BackpackPanel", mf, UDim2.fromOffset(fpW,fpH),
 		UDim2.new(0.5,-fpW/2, 1, fpCloseY), AC, 0, RADIUS)
 	fp.ClipsDescendants = false; fp.Visible = false
 	stroke(fp, C.BlueDark, 2, 0)
@@ -530,7 +543,7 @@ do
 
 	-- Detail Panel
 	local dpW = fpW - fgW - 8
-	local dp = frame("DetailPanel", fp, UDim2.fromOffset(dpW-8, fgH-8), UDim2.fromOffset(fgW+4, 56), C.Card, 0, 8)
+	local dp = frame("DetailPanel", fp, UDim2.fromOffset(dpW-8, fgH-8), UDim2.fromOffset(fgW+4, 56), C.Card, 0.08, 8)
 	stroke(dp, C.CardStroke, 1.5, 0)
 
 	local iconSize = 72
@@ -568,21 +581,23 @@ do
 	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
 	dim.BackgroundTransparency = 0.45; dim.AutoButtonColor = false
 
-	local panel = frame("Panel", g, UDim2.fromOffset(620,180), UDim2.new(0.5,0,1,-40), AC, 0, RADIUS)
-	panel.AnchorPoint = Vector2.new(0.5,1); stroke(panel, C.TealDark, 2, 0)
+	-- Вертикальная панель у правого края экрана, тёмное стекло
+	local panel = frame("Panel", g, UDim2.fromOffset(320,420), UDim2.new(1,-32,0.5,0), C.Card, 0.08, 12)
+	panel.AnchorPoint = Vector2.new(1,0.5); stroke(panel, C.CardStroke, 1.5, 0.2)
 
-	-- Portrait (белая карточка)
-	local portrait = frame("Portrait", panel, UDim2.fromOffset(148,148), UDim2.fromOffset(12,12), C.Card, 0, 8)
-	stroke(portrait, C.TealDark, 2, 0)
+	-- Portrait (вверху, по центру)
+	local portrait = frame("Portrait", panel, UDim2.fromOffset(120,120), UDim2.new(0.5,-60,0,16), C.Card, 0.08, 8)
+	stroke(portrait, C.CardStroke, 2, 0.1)
 	local pIcon = lbl("PortraitIcon", portrait, "🧑", UDim2.fromScale(1,1), UDim2.new(), C.Text, true)
 	pIcon.TextScaled = true
 
-	-- Name label (above portrait — на фоне панели)
-	local nameLabel = lbl("NameLabel", panel, "NPC", UDim2.new(0,148,0,28), UDim2.fromOffset(12,-32), C.White, true, 16)
+	-- Name label (под портретом)
+	local nameLabel = lbl("NameLabel", panel, "NPC", UDim2.new(1,-24,0,28), UDim2.fromOffset(12,144), C.Text, true, 17)
 	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 
-	-- Dialog text
-	local dialogText = lbl("DialogText", panel, "", UDim2.new(1,-188,0,100), UDim2.fromOffset(174,14), C.White, false, 16)
+	-- Dialog text (под именем)
+	local dialogText = lbl("DialogText", panel, "", UDim2.new(1,-24,0,110), UDim2.fromOffset(12,178), C.Text, false, 15)
 	dialogText.TextXAlignment = Enum.TextXAlignment.Left
 	dialogText.TextYAlignment = Enum.TextYAlignment.Top
 	dialogText.TextScaled = false
@@ -591,11 +606,11 @@ do
 	local ca = btn("ClickArea", panel, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
 	ca.BackgroundTransparency = 1; ca.ZIndex = 1
 
-	-- Кнопки выбора (pill-style)
-	local choicesRow = frame("ChoicesRow", panel, UDim2.new(1,-188,0,42), UDim2.new(0,174,1,-54), Color3.new(0,0,0), 1)
-	local c1 = btn("Choice1", choicesRow, "Yes!", UDim2.new(0.48,0,1,0), UDim2.new(), C.Green, C.White, 15)
+	-- Кнопки выбора — вертикальный стек крупных кнопок внизу панели
+	local choicesRow = frame("ChoicesRow", panel, UDim2.new(1,-24,0,96), UDim2.new(0,12,1,-108), Color3.new(0,0,0), 1)
+	local c1 = btn("Choice1", choicesRow, "Yes!", UDim2.new(1,0,0,42), UDim2.new(0,0,0,0), C.Green, C.White, 15)
 	corner(c1, BRAD); stroke(c1, C.GreenDark, 1.5, 0)
-	local c2 = btn("Choice2", choicesRow, "Maybe later", UDim2.new(0.48,0,1,0), UDim2.new(0.52,0,0,0), C.CloseBtn, C.White, 15)
+	local c2 = btn("Choice2", choicesRow, "Maybe later", UDim2.new(1,0,0,42), UDim2.new(0,0,0,54), C.CloseBtn, C.White, 15)
 	corner(c2, BRAD); stroke(c2, Color3.fromRGB(170,40,40), 1.5, 0)
 	choicesRow.Visible = false
 end
@@ -625,7 +640,7 @@ do
 
 	local fl = Instance.new("ScrollingFrame"); fl.Name = "FishList"
 	fl.Size = UDim2.new(1,-16,1,-134); fl.Position = UDim2.fromOffset(8,78)
-	fl.BackgroundColor3 = C.Card; fl.BackgroundTransparency = 0; fl.BorderSizePixel = 0
+	fl.BackgroundColor3 = C.Card; fl.BackgroundTransparency = 0.08; fl.BorderSizePixel = 0
 	fl.ScrollBarThickness = 4; fl.ScrollBarImageColor3 = C.TealDark
 	fl.CanvasSize = UDim2.new(0,0,0,0); fl.ScrollingDirection = Enum.ScrollingDirection.Y
 	fl.Parent = panel
@@ -664,7 +679,7 @@ do
 	closeX(panel)
 
 	-- Три слота: Short / Medium / Long. Третий разблокируется геймпассом Extra AFK Slot.
-	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), C.Card, 0, 8)
+	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), C.Card, 0.08, 8)
 	stroke(sc, C.CardStroke, 1.5, 0)
 	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.new(1,-12,0.32,-6)
 	gl.CellPadding = UDim2.fromOffset(0,6); gl.SortOrder = Enum.SortOrder.LayoutOrder
@@ -718,7 +733,7 @@ do
 	desc.TextWrapped = true; desc.TextYAlignment = Enum.TextYAlignment.Top
 
 	-- Белая карточка со статистикой
-	local rs = frame("RebirthStats", panel, UDim2.new(1,-24,0,86), UDim2.fromOffset(12,102), C.Card, 0, 8)
+	local rs = frame("RebirthStats", panel, UDim2.new(1,-24,0,86), UDim2.fromOffset(12,102), C.Card, 0.08, 8)
 	stroke(rs, C.CardStroke, 1.5, 0)
 	local statNames = {"CurrentCoins","TotalCatch","RebirthCount"}
 	local statLabels = {"🪙 Coins","🐟 Total Caught","🌀 Rebirths"}
@@ -767,7 +782,7 @@ do
 
 	local dg = Instance.new("ScrollingFrame"); dg.Name = "DexGrid"
 	dg.Size = UDim2.new(1,-16,1,-84); dg.Position = UDim2.fromOffset(8,76)
-	dg.BackgroundColor3 = C.Card; dg.BackgroundTransparency = 0; dg.BorderSizePixel = 0
+	dg.BackgroundColor3 = C.Card; dg.BackgroundTransparency = 0.08; dg.BorderSizePixel = 0
 	dg.ScrollBarThickness = 4; dg.ScrollBarImageColor3 = Color3.fromRGB(80,120,200)
 	dg.CanvasSize = UDim2.new(0,0,0,0); dg.ScrollingDirection = Enum.ScrollingDirection.Y
 	dg.Parent = panel

@@ -1,6 +1,6 @@
 -- StarterGui/CustomInventory.client.lua
 -- Reef Diver — Кастомный инвентарь
--- Хотбар снизу (удочки) + панель fish (открывается по кнопке)
+-- Единый хотбар 1-8 (удочки + рыбы) + рюкзак (overflow рыб, открывается по кнопке)
 -- GUI создаётся UIBuilder.lua — этот скрипт подключает всю логику.
 
 local Players           = game:GetService("Players")
@@ -21,18 +21,19 @@ local Backpack  = Player:WaitForChild("Backpack")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Strings = require(ReplicatedStorage.Modules.Strings)
 local RodData = require(ReplicatedStorage.Modules.RodData)
+local EquipRod = Remotes:WaitForChild("EquipRod")
 
 -- ══ КОНСТАНТЫ (должны совпадать с UIBuilder.lua) ══
 local SLOT_SIZE        = 60
 local SLOT_GAP         = 6
 local SLOT_PADDING     = 8
-local HOTBAR_ROD_COUNT = 5
+local HOTBAR_SLOT_COUNT = 8  -- единый хотбар: удочки + рыбы (было 5 слотов только для удочек)
 local ANIM_TIME        = 0.25
 local FISH_SLOT_SIZE   = 66
 local FISH_COLS        = 5
 local FISH_ROWS_VIS    = 3
 
-local hotbarWidth  = SLOT_PADDING * 2 + HOTBAR_ROD_COUNT * SLOT_SIZE + (HOTBAR_ROD_COUNT - 1) * SLOT_GAP
+local hotbarWidth  = SLOT_PADDING * 2 + HOTBAR_SLOT_COUNT * SLOT_SIZE + (HOTBAR_SLOT_COUNT - 1) * SLOT_GAP
 local hotbarHeight = SLOT_PADDING * 2 + SLOT_SIZE
 local fishPanelW   = FISH_COLS * (FISH_SLOT_SIZE + SLOT_GAP) + SLOT_GAP + 220
 local fishPanelH   = FISH_ROWS_VIS * (FISH_SLOT_SIZE + SLOT_GAP) + SLOT_GAP + 60
@@ -68,26 +69,27 @@ local MUTATION_COLORS = {
 
 -- ══ СОСТОЯНИЕ ══
 local isInventoryOpen  = false
-local isFishPanelOpen  = false
+local isBackpackOpen    = false
 local equippedRodId    = nil
 local hotbarSlots      = {}
-local fishItems        = {}
+local fishItems        = {}      -- overflow-рыбы, показанные в рюкзаке (index 9+ объединённого списка)
 local selectedFishItem = nil
+local selectedSlotIdx  = nil     -- индекс выбранного слота хотбара (1-8)
 local textBoxFocused   = false
 
 -- ══ GUI (создан UIBuilder.lua) ══
 local InventoryGui = PlayerGui:WaitForChild("ReefDiverInventory", 20)
 local MainFrame    = InventoryGui:WaitForChild("MainFrame")
 local HotbarBG     = MainFrame:WaitForChild("HotbarBG")
-local fishButton   = MainFrame:WaitForChild("FishInventoryToggle")
-local FishPanel    = MainFrame:WaitForChild("FishPanel")
+local backpackButton = MainFrame:WaitForChild("BackpackToggle")
+local BackpackPanel  = MainFrame:WaitForChild("BackpackPanel")
 
-local fishHeader      = FishPanel:WaitForChild("Header")
+local fishHeader      = BackpackPanel:WaitForChild("Header")
 local fishCountLabel  = fishHeader:WaitForChild("FishCount")
-local FishScrollFrame = FishPanel:WaitForChild("FishGrid")
-local fishGrid        = FishScrollFrame:WaitForChild("Grid")
+local FishScrollFrame = BackpackPanel:WaitForChild("FishGrid")
+local fishGrid         = FishScrollFrame:WaitForChild("Grid")
 
-local DetailPanel           = FishPanel:WaitForChild("DetailPanel")
+local DetailPanel           = BackpackPanel:WaitForChild("DetailPanel")
 local detailIcon            = DetailPanel:WaitForChild("Icon")
 local detailIconPlaceholder = DetailPanel:WaitForChild("IconPlaceholder")
 local detailName            = DetailPanel:WaitForChild("RowName"):WaitForChild("Value")
@@ -128,21 +130,23 @@ local function tween(obj, props, t, style, dir)
 end
 
 -- ══ ЗАПОЛНИТЬ МАССИВ HOTBAR SLOTS ══
-for i = 1, HOTBAR_ROD_COUNT do
-    local slotFrame = HotbarBG:WaitForChild("RodSlot_" .. i)
+for i = 1, HOTBAR_SLOT_COUNT do
+    local slotFrame = HotbarBG:WaitForChild("Slot_" .. i)
     hotbarSlots[i] = {
         frame     = slotFrame,
         icon      = slotFrame:WaitForChild("Icon"),
         nameLabel = slotFrame:WaitForChild("NameLabel"),
         equipBar  = slotFrame:WaitForChild("EquipBar"),
         button    = slotFrame:WaitForChild("Button"),
+        kind      = nil,   -- "rod" | "fish" | nil
         rodId     = nil,
+        fishEntry = nil,
         isEmpty   = true,
     }
 end
 
 -- ══════════════════════════════════════════
---   ЛОГИКА ХОТБАРА (УДОЧКИ)
+--   ОБЩИЕ ХЕЛПЕРЫ ХОТБАРА
 -- ══════════════════════════════════════════
 
 local function getCharacter()
@@ -168,6 +172,9 @@ local function equipTool(toolName)
         local tool = Backpack:FindFirstChild(toolName)
         if tool then hum:EquipTool(tool) end
     end)
+    if RodData:GetRod(toolName) then
+        EquipRod:FireServer(toolName)
+    end
 end
 
 local function unequipAll()
@@ -175,24 +182,76 @@ local function unequipAll()
     if hum then hum:UnequipTools() end
 end
 
-local function updateHotbarSlot(slotIdx, rodId)
-    local slot = hotbarSlots[slotIdx]
-    if not slot then return end
+-- ══ СБОР ОБЪЕДИНЁННОГО СПИСКА (удочки, затем рыбы) ══
+local function getFishEntries()
+    local entries = {}
+    local fishFolder = Player:FindFirstChild("FishInventory")
+    if not fishFolder then return entries end
+    for _, item in ipairs(fishFolder:GetChildren()) do
+        if item:IsA("Configuration") then
+            table.insert(entries, {
+                itemName    = item.Name,
+                fishId      = item:GetAttribute("FishId") or "???",
+                displayName = item:GetAttribute("DisplayName") or "???",
+                rarity      = item:GetAttribute("Rarity") or "Common",
+                zone        = item:GetAttribute("Zone") or "—",
+                size        = item:GetAttribute("Size") or "Normal",
+                mutation    = item:GetAttribute("Mutation") or "",
+                value       = item:GetAttribute("Value") or 0,
+                image       = item:GetAttribute("Image") or "",
+            })
+        end
+    end
+    return entries
+end
 
-    if not rodId then
-        slot.rodId = nil
-        slot.isEmpty = true
-        slot.icon.Visible = false
-        slot.nameLabel.Visible = false
-        slot.nameLabel.Text = ""
-        slot.equipBar.Visible = false
-        slot.frame.BackgroundTransparency = 0.5
-        makeStroke(slot.frame, Color3.fromRGB(70, 75, 85), 1, 0.5)
-        return
+local function getOwnedRodIds()
+    local rodList = {}
+    for _, item in ipairs(Backpack:GetChildren()) do
+        if item:IsA("Tool") and RodData:GetRod(item.Name) then
+            table.insert(rodList, item.Name)
+        end
     end
 
+    local char = getCharacter()
+    if char then
+        for _, item in ipairs(char:GetChildren()) do
+            if item:IsA("Tool") and RodData:GetRod(item.Name) then
+                local found = false
+                for _, r in ipairs(rodList) do
+                    if r == item.Name then found = true; break end
+                end
+                if not found then table.insert(rodList, item.Name) end
+            end
+        end
+    end
+    return rodList
+end
+
+-- ══════════════════════════════════════════
+--   ОБНОВЛЕНИЕ СЛОТОВ ХОТБАРА (рыба + удочки)
+-- ══════════════════════════════════════════
+
+local function clearSlotVisual(slot)
+    slot.kind = nil
+    slot.rodId = nil
+    slot.fishEntry = nil
+    slot.isEmpty = true
+    slot.icon.Visible = false
+    slot.nameLabel.Visible = false
+    slot.nameLabel.Text = ""
+    slot.equipBar.Visible = false
+    slot.frame.BackgroundTransparency = 0.5
+    makeStroke(slot.frame, Color3.fromRGB(70, 75, 85), 1, 0.5)
+end
+
+local function setSlotAsRod(slot, rodId)
     local rod = RodData:GetRod(rodId)
+    if not rod then clearSlotVisual(slot); return end
+
+    slot.kind = "rod"
     slot.rodId = rodId
+    slot.fishEntry = nil
     slot.isEmpty = false
 
     if rod.icon and rod.icon ~= "" then
@@ -215,42 +274,89 @@ local function updateHotbarSlot(slotIdx, rodId)
     end
 end
 
+local function setSlotAsFish(slot, fishEntry, idx)
+    slot.kind = "fish"
+    slot.rodId = nil
+    slot.fishEntry = fishEntry
+    slot.isEmpty = false
+
+    if fishEntry.image and fishEntry.image ~= "" then
+        slot.icon.Image = fishEntry.image
+        slot.icon.Visible = true
+        slot.nameLabel.Visible = false
+    else
+        slot.nameLabel.Text = fishEntry.displayName
+        slot.nameLabel.Visible = true
+        slot.icon.Visible = false
+    end
+
+    local selected = (selectedSlotIdx == idx)
+    slot.equipBar.Visible = selected
+    slot.frame.BackgroundTransparency = selected and 0.1 or 0.35
+    local rarityColor = RARITY_COLORS[fishEntry.rarity] or Color3.fromRGB(70, 75, 85)
+    makeStroke(slot.frame, rarityColor, selected and 2 or 1.5, selected and 0 or 0.2)
+end
+
 local function rebuildHotbar()
-    local rodList = {}
+    local rodList   = getOwnedRodIds()
+    local fishList  = getFishEntries()
 
-    for _, item in ipairs(Backpack:GetChildren()) do
-        if item:IsA("Tool") and RodData:GetRod(item.Name) then
-            table.insert(rodList, item.Name)
+    -- Объединённый список: сначала все удочки, затем все рыбы
+    local combined = {}
+    for _, rodId in ipairs(rodList) do
+        table.insert(combined, { kind = "rod", rodId = rodId })
+    end
+    for _, entry in ipairs(fishList) do
+        table.insert(combined, { kind = "fish", fishEntry = entry })
+    end
+
+    for i = 1, HOTBAR_SLOT_COUNT do
+        local slot = hotbarSlots[i]
+        local item = combined[i]
+        if not item then
+            clearSlotVisual(slot)
+        elseif item.kind == "rod" then
+            setSlotAsRod(slot, item.rodId)
+        else
+            setSlotAsFish(slot, item.fishEntry, i)
         end
     end
 
-    local char = getCharacter()
-    if char then
-        for _, item in ipairs(char:GetChildren()) do
-            if item:IsA("Tool") and RodData:GetRod(item.Name) then
-                local found = false
-                for _, r in ipairs(rodList) do
-                    if r == item.Name then found = true; break end
-                end
-                if not found then table.insert(rodList, item.Name) end
-            end
+    -- Всё, что не попало в 1-8, уходит в рюкзак (overflow)
+    fishItems = {}
+    for i = HOTBAR_SLOT_COUNT + 1, #combined do
+        if combined[i].kind == "fish" then
+            table.insert(fishItems, combined[i].fishEntry)
         end
     end
 
-    for i = 1, HOTBAR_ROD_COUNT do
-        updateHotbarSlot(i, rodList[i])
+    if isBackpackOpen then
+        -- DetailPanel/Grid пересобираются по требованию, см. refreshFishGrid
     end
 end
 
-for i, slot in ipairs(hotbarSlots) do
-    slot.button.MouseButton1Click:Connect(function()
-        if slot.isEmpty or not slot.rodId then return end
+-- ══ ВЫБОР / АКТИВАЦИЯ СЛОТА (по клику или клавише 1-8) ══
+local function activateSlot(i)
+    local slot = hotbarSlots[i]
+    if not slot or slot.isEmpty then return end
+
+    if slot.kind == "rod" then
         if isToolEquipped(slot.rodId) then
             unequipAll()
         else
             equipTool(slot.rodId)
         end
         task.delay(0.05, rebuildHotbar)
+    elseif slot.kind == "fish" then
+        -- Безопасное действие для рыбы: просто выделить слот (не придумываем новую механику)
+        selectedSlotIdx = i
+        rebuildHotbar()
+    end
+end
+
+for i, slot in ipairs(hotbarSlots) do
+    slot.button.MouseButton1Click:Connect(function()
+        activateSlot(i)
     end)
 
     slot.button.MouseEnter:Connect(function()
@@ -259,13 +365,18 @@ for i, slot in ipairs(hotbarSlots) do
     end)
     slot.button.MouseLeave:Connect(function()
         if slot.isEmpty then return end
-        local eq = isToolEquipped(slot.rodId or "")
-        tween(slot.frame, {BackgroundTransparency = eq and 0.1 or 0.35}, 0.1)
+        if slot.kind == "rod" then
+            local eq = isToolEquipped(slot.rodId or "")
+            tween(slot.frame, {BackgroundTransparency = eq and 0.1 or 0.35}, 0.1)
+        else
+            local selected = (selectedSlotIdx == i)
+            tween(slot.frame, {BackgroundTransparency = selected and 0.1 or 0.35}, 0.1)
+        end
     end)
 end
 
 -- ══════════════════════════════════════════
---   ЛОГИКА ИНВЕНТАРЯ РЫБ
+--   ЛОГИКА РЮКЗАКА (OVERFLOW РЫБ)
 -- ══════════════════════════════════════════
 
 local function createFishSlot(fishEntry, layoutOrder)
@@ -397,81 +508,36 @@ local function createFishSlot(fishEntry, layoutOrder)
     return slotFrame
 end
 
+-- v1: рюкзак показывает только избыточных рыб (8+ в объединённом списке).
+-- Избыточные удочки (если когда-нибудь их станет больше 8) сейчас не отображаются нигде —
+-- риск признан и сознательно принят для этой версии.
 local function refreshFishGrid()
     for _, child in ipairs(fishGrid:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
-    fishItems = {}
 
-    local fishFolder = Player:FindFirstChild("FishInventory")
-    if not fishFolder then
-        fishCountLabel.Text = "0 fish"
-        FishScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-        return
+    fishCountLabel.Text = #fishItems .. " fish"
+    for i, entry in ipairs(fishItems) do
+        createFishSlot(entry, i)
     end
 
-    local items = fishFolder:GetChildren()
-    local count = 0
-
-    for i, item in ipairs(items) do
-        if item:IsA("Configuration") then
-            local entry = {
-                itemName    = item.Name,
-                fishId      = item:GetAttribute("FishId") or "???",
-                displayName = item:GetAttribute("DisplayName") or "???",
-                rarity      = item:GetAttribute("Rarity") or "Common",
-                zone        = item:GetAttribute("Zone") or "—",
-                size        = item:GetAttribute("Size") or "Normal",
-                mutation    = item:GetAttribute("Mutation") or "",
-                value       = item:GetAttribute("Value") or 0,
-                image       = item:GetAttribute("Image") or "",
-            }
-            table.insert(fishItems, entry)
-            createFishSlot(entry, i)
-            count = count + 1
-        end
-    end
-
-    fishCountLabel.Text = count .. " fish"
-    local rows = math.ceil(count / FISH_COLS)
+    local rows = math.ceil(#fishItems / FISH_COLS)
     FishScrollFrame.CanvasSize = UDim2.fromOffset(0, rows * (FISH_SLOT_SIZE + SLOT_GAP) + SLOT_GAP)
 end
 
 local function hookFishFolder(folder)
-    folder.ChildAdded:Connect(function(item)
-        local count = 0
-        for _, c in ipairs(folder:GetChildren()) do
-            if c:IsA("Configuration") then count = count + 1 end
-        end
-        fishCountLabel.Text = count .. " fish"
-
-        if isFishPanelOpen and item:IsA("Configuration") then
-            local entry = {
-                itemName    = item.Name,
-                fishId      = item:GetAttribute("FishId") or "???",
-                displayName = item:GetAttribute("DisplayName") or "???",
-                rarity      = item:GetAttribute("Rarity") or "Common",
-                zone        = item:GetAttribute("Zone") or "—",
-                size        = item:GetAttribute("Size") or "Normal",
-                mutation    = item:GetAttribute("Mutation") or "",
-                value       = item:GetAttribute("Value") or 0,
-                image       = item:GetAttribute("Image") or "",
-            }
-            table.insert(fishItems, entry)
-            createFishSlot(entry, #fishItems)
-            local rows = math.ceil(#fishItems / FISH_COLS)
-            FishScrollFrame.CanvasSize = UDim2.fromOffset(0,
-                rows * (FISH_SLOT_SIZE + SLOT_GAP) + SLOT_GAP)
-        end
+    folder.ChildAdded:Connect(function()
+        task.delay(0.05, function()
+            rebuildHotbar()
+            if isBackpackOpen then refreshFishGrid() end
+        end)
     end)
 
     folder.ChildRemoved:Connect(function()
-        local count = 0
-        for _, c in ipairs(folder:GetChildren()) do
-            if c:IsA("Configuration") then count = count + 1 end
-        end
-        fishCountLabel.Text = count .. " fish"
-        if isFishPanelOpen then refreshFishGrid() end
+        task.delay(0.05, function()
+            rebuildHotbar()
+            if isBackpackOpen then refreshFishGrid() end
+        end)
     end)
 end
 
@@ -484,52 +550,52 @@ else
     end)
 end
 
--- ══ ОТКРЫТИЕ / ЗАКРЫТИЕ ПАНЕЛИ РЫБ ══
+-- ══ ОТКРЫТИЕ / ЗАКРЫТИЕ ПАНЕЛИ РЮКЗАКА ══
 
-local function openFishPanel()
-    if isFishPanelOpen then return end
-    isFishPanelOpen = true
+local function openBackpackPanel()
+    if isBackpackOpen then return end
+    isBackpackOpen = true
 
     refreshFishGrid()
-    FishPanel.Visible = true
-    FishPanel.Position = UDim2.new(0.5, -fishPanelW/2, 1, fishPanelClosedY - 20)
-    tween(FishPanel,
+    BackpackPanel.Visible = true
+    BackpackPanel.Position = UDim2.new(0.5, -fishPanelW/2, 1, fishPanelClosedY - 20)
+    tween(BackpackPanel,
         {Position = UDim2.new(0.5, -fishPanelW/2, 1, fishPanelOpenY)},
         ANIM_TIME, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-    fishButton.Text = "🐠 ▼"
+    backpackButton.Text = "🎒 ▼"
 end
 
-local function closeFishPanel()
-    if not isFishPanelOpen then return end
-    isFishPanelOpen = false
+local function closeBackpackPanel()
+    if not isBackpackOpen then return end
+    isBackpackOpen = false
 
-    tween(FishPanel,
+    tween(BackpackPanel,
         {Position = UDim2.new(0.5, -fishPanelW/2, 1, fishPanelClosedY)},
         ANIM_TIME - 0.05, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
     task.delay(ANIM_TIME, function()
-        if not isFishPanelOpen then FishPanel.Visible = false end
+        if not isBackpackOpen then BackpackPanel.Visible = false end
     end)
-    fishButton.Text = "🐠 ▲"
+    backpackButton.Text = "🎒 ▲"
 end
 
-fishButton.MouseButton1Click:Connect(function()
-    if isFishPanelOpen then closeFishPanel() else openFishPanel() end
+backpackButton.MouseButton1Click:Connect(function()
+    if isBackpackOpen then closeBackpackPanel() else openBackpackPanel() end
 end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        if isFishPanelOpen then
+        if isBackpackOpen then
             local mPos = UserInputService:GetMouseLocation()
-            local pPos = FishPanel.AbsolutePosition
-            local pSize = FishPanel.AbsoluteSize
+            local pPos = BackpackPanel.AbsolutePosition
+            local pSize = BackpackPanel.AbsoluteSize
             local inside = mPos.X > pPos.X and mPos.X < pPos.X + pSize.X
                        and mPos.Y > pPos.Y and mPos.Y < pPos.Y + pSize.Y
-            local bPos = fishButton.AbsolutePosition
-            local bSize = fishButton.AbsoluteSize
+            local bPos = backpackButton.AbsolutePosition
+            local bSize = backpackButton.AbsoluteSize
             local onBtn = mPos.X > bPos.X and mPos.X < bPos.X + bSize.X
                       and mPos.Y > bPos.Y and mPos.Y < bPos.Y + bSize.Y
-            if not inside and not onBtn then closeFishPanel() end
+            if not inside and not onBtn then closeBackpackPanel() end
         end
     end
 end)
@@ -540,23 +606,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
 
     local keyVal = input.KeyCode.Value
     local oneVal = Enum.KeyCode.One.Value
-    for i = 1, HOTBAR_ROD_COUNT do
+    for i = 1, HOTBAR_SLOT_COUNT do
         if keyVal == oneVal + i - 1 then
-            local slot = hotbarSlots[i]
-            if not slot.isEmpty and slot.rodId then
-                if isToolEquipped(slot.rodId) then
-                    unequipAll()
-                else
-                    equipTool(slot.rodId)
-                end
-                task.delay(0.05, rebuildHotbar)
-            end
+            activateSlot(i)
             return
         end
     end
 
     if input.KeyCode == Enum.KeyCode.Tab or input.KeyCode == Enum.KeyCode.F then
-        if isFishPanelOpen then closeFishPanel() else openFishPanel() end
+        if isBackpackOpen then closeBackpackPanel() else openBackpackPanel() end
     end
 end)
 
@@ -607,20 +665,17 @@ Remotes:WaitForChild("PlayerDataLoaded").OnClientEvent:Connect(function(data)
     task.delay(1, function()
         local folder = Player:FindFirstChild("FishInventory")
         if folder then
-            local count = 0
-            for _, c in ipairs(folder:GetChildren()) do
-                if c:IsA("Configuration") then count = count + 1 end
-            end
-            fishCountLabel.Text = count .. " fish"
+            rebuildHotbar()
         end
     end)
 end)
 
 Remotes:WaitForChild("FishCaught").OnClientEvent:Connect(function()
-    local originalColor = fishButton.BackgroundColor3
-    tween(fishButton, {BackgroundColor3 = Color3.fromRGB(0, 220, 100)}, 0.15)
+    task.delay(0.05, rebuildHotbar)
+    local originalColor = backpackButton.BackgroundColor3
+    tween(backpackButton, {BackgroundColor3 = Color3.fromRGB(0, 220, 100)}, 0.15)
     task.delay(0.15, function()
-        tween(fishButton, {BackgroundColor3 = originalColor}, 0.3)
+        tween(backpackButton, {BackgroundColor3 = originalColor}, 0.3)
     end)
 end)
 

@@ -162,11 +162,11 @@ local function closeDialog(callback)
 
     TweenService:Create(panel,
         TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        { Position = UDim2.new(0.5, 0, 1.6, 0) }):Play()
+        { Position = UDim2.new(1.6, -32, 0.5, 0) }):Play()
 
     task.delay(0.3, function()
         gui.Enabled = false
-        panel.Position = UDim2.new(0.5, 0, 1, -40)
+        panel.Position = UDim2.new(1, -32, 0.5, 0)
         if callback then callback() end
     end)
 end
@@ -187,10 +187,10 @@ local function openDialog(npcId)
     choice2.Text = config.negativeChoice or "Maybe later"
     choicesRow.Visible = false
 
-    panel.Position = UDim2.new(0.5, 0, 1.6, 0)
+    panel.Position = UDim2.new(1.6, -32, 0.5, 0)
     TweenService:Create(panel,
         TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-        { Position = UDim2.new(0.5, 0, 1, -40) }):Play()
+        { Position = UDim2.new(1, -32, 0.5, 0) }):Play()
 
     showLine(1)
 end

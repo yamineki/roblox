@@ -11,6 +11,16 @@ local Strings = require(ReplicatedStorage.Modules.Strings)
 local SoundFX = require(ReplicatedStorage.Modules.SoundFX)
 local ShopBridge = require(ReplicatedStorage.Modules.ShopBridge)
 
+-- Цвета редкости для обводки карточек удочек (совпадают с FishDexPanel)
+local RARITY_COLOR = {
+    Common    = Color3.fromRGB(150, 170, 190),
+    Uncommon  = Color3.fromRGB(90, 200, 110),
+    Rare      = Color3.fromRGB(70, 140, 230),
+    Epic      = Color3.fromRGB(170, 90, 220),
+    Legendary = Color3.fromRGB(230, 180, 60),
+    Mythic    = Color3.fromRGB(230, 80, 80),
+}
+
 local Player    = Players.LocalPlayer
 local PlayerGui = Player.PlayerGui
 
@@ -69,8 +79,9 @@ local function rebuildRodGrid()
 
         local card = Instance.new("Frame")
         card.Name = rodId
-        card.Size = UDim2.new(0.48, 0, 0, 120)
-        card.BackgroundColor3 = Color3.fromRGB(245, 248, 255)
+        card.Size = UDim2.fromOffset(160, 220)
+        card.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+        card.BackgroundTransparency = 0.08
         card.BorderSizePixel = 0
         card.Parent = grid
 
@@ -78,8 +89,9 @@ local function rebuildRodGrid()
         cardCorner.CornerRadius = UDim.new(0, 8)
         cardCorner.Parent = card
 
+        -- RodData не содержит поля rarity для удочек (v1) — обводка по умолчанию teal
         local cardStroke = Instance.new("UIStroke")
-        cardStroke.Color = Color3.fromRGB(210, 220, 235)
+        cardStroke.Color = RARITY_COLOR[rod.rarity] or Color3.fromRGB(80, 200, 190)
         cardStroke.Thickness = 1.5
         cardStroke.Parent = card
 
@@ -88,7 +100,7 @@ local function rebuildRodGrid()
         nameLabel.Text = rod.displayName
         nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
         nameLabel.BackgroundTransparency = 1
-        nameLabel.TextColor3 = Color3.fromRGB(30, 35, 50)
+        nameLabel.TextColor3 = Color3.fromRGB(235, 238, 245)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextScaled = true
         nameLabel.Parent = card
@@ -99,7 +111,7 @@ local function rebuildRodGrid()
         bonusLabel.Size = UDim2.new(1, -8, 0.35, 0)
         bonusLabel.Position = UDim2.new(0, 4, 0.25, 0)
         bonusLabel.BackgroundTransparency = 1
-        bonusLabel.TextColor3 = Color3.fromRGB(100, 110, 135)
+        bonusLabel.TextColor3 = Color3.fromRGB(150, 158, 175)
         bonusLabel.Font = Enum.Font.Gotham
         bonusLabel.TextScaled = true
         bonusLabel.TextWrapped = true
@@ -135,13 +147,39 @@ local function rebuildRodGrid()
             actionButton.Text = (canAfford and "🪙 " or "🔒 ") .. tostring(rod.price)
             actionButton.BackgroundColor3 = canAfford
                 and Color3.fromRGB(50, 175, 100)
-                or  Color3.fromRGB(170, 175, 190)
+                or  Color3.fromRGB(60, 64, 72)
             actionButton.MouseButton1Click:Connect(function()
                 SoundFX.Play("Click")
                 BuyRod:FireServer(rodId)
             end)
         end
     end
+
+    local cardCount = #RodData.ShopOrder
+    grid.CanvasSize = UDim2.fromOffset(cardCount * (160 + 10) + 6, 0)
+end
+
+-- ══ НАВИГАЦИЯ КАРУСЕЛИ ══
+local function wireCarouselNav()
+    if not ShopGui then return end
+    local grid = ShopGui:FindFirstChild("RodGrid", true)
+    local navLeft = ShopGui:FindFirstChild("NavLeft", true)
+    local navRight = ShopGui:FindFirstChild("NavRight", true)
+    if not grid or not navLeft or not navRight then return end
+
+    local STEP = 150
+
+    navLeft.MouseButton1Click:Connect(function()
+        local maxX = math.max(grid.CanvasSize.X.Offset - grid.AbsoluteSize.X, 0)
+        local x = math.clamp(grid.CanvasPosition.X - STEP, 0, maxX)
+        grid.CanvasPosition = Vector2.new(x, 0)
+    end)
+
+    navRight.MouseButton1Click:Connect(function()
+        local maxX = math.max(grid.CanvasSize.X.Offset - grid.AbsoluteSize.X, 0)
+        local x = math.clamp(grid.CanvasPosition.X + STEP, 0, maxX)
+        grid.CanvasPosition = Vector2.new(x, 0)
+    end)
 end
 
 local function openShop()
@@ -252,3 +290,5 @@ if ShopGui then
         closeBtn.MouseButton1Click:Connect(closeShop)
     end
 end
+
+wireCarouselNav()

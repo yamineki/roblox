@@ -56,19 +56,19 @@ local function buildGrid(dex)
         local card = Instance.new("Frame")
         card.Name = fishId
         card.LayoutOrder = i
-        card.BackgroundColor3 = caught and Color3.fromRGB(235, 245, 255) or Color3.fromRGB(225, 228, 235)
+        card.BackgroundColor3 = caught and Color3.fromRGB(34, 38, 46) or Color3.fromRGB(26, 28, 34)
         card.BorderSizePixel = 0
         card.Parent = dexGrid
         local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(0,8); cc.Parent = card
         local cs = Instance.new("UIStroke")
-        cs.Color = caught and (RARITY_COLOR[fish.rarity] or Color3.fromRGB(180,190,210)) or Color3.fromRGB(180,185,195)
+        cs.Color = caught and (RARITY_COLOR[fish.rarity] or Color3.fromRGB(100,110,130)) or Color3.fromRGB(60,64,72)
         cs.Thickness = 1.5
         cs.Parent = card
 
         local iconHolder = Instance.new("Frame")
         iconHolder.Size = UDim2.new(1,-12,0,48)
         iconHolder.Position = UDim2.fromOffset(6,6)
-        iconHolder.BackgroundColor3 = caught and (RARITY_COLOR[fish.rarity] or Color3.fromRGB(150,160,180)) or Color3.fromRGB(190,195,205)
+        iconHolder.BackgroundColor3 = caught and (RARITY_COLOR[fish.rarity] or Color3.fromRGB(150,160,180)) or Color3.fromRGB(50,54,62)
         iconHolder.BackgroundTransparency = caught and 0.15 or 0.3
         iconHolder.BorderSizePixel = 0
         iconHolder.Parent = card
@@ -97,7 +97,7 @@ local function buildGrid(dex)
         nameLbl.Position = UDim2.fromOffset(4,56)
         nameLbl.BackgroundTransparency = 1
         nameLbl.Text = caught and fish.displayName or Strings.FishDex_Unknown
-        nameLbl.TextColor3 = caught and Color3.fromRGB(30,35,50) or Color3.fromRGB(120,125,135)
+        nameLbl.TextColor3 = caught and Color3.fromRGB(235,238,245) or Color3.fromRGB(120,125,135)
         nameLbl.Font = Enum.Font.GothamBold
         nameLbl.TextScaled = true
         nameLbl.Parent = card
@@ -110,10 +110,10 @@ local function buildGrid(dex)
         subLbl.Font = Enum.Font.Gotham
         if caught then
             subLbl.Text = "x" .. tostring(entry.count or 1) .. (entry.hasMutation and " ✨" or "")
-            subLbl.TextColor3 = Color3.fromRGB(100,110,135)
+            subLbl.TextColor3 = Color3.fromRGB(150,158,175)
         else
             subLbl.Text = Strings.FishDex_NotCaught
-            subLbl.TextColor3 = Color3.fromRGB(130,135,145)
+            subLbl.TextColor3 = Color3.fromRGB(110,115,125)
         end
         subLbl.Parent = card
     end
