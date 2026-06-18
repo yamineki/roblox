@@ -94,9 +94,28 @@ confirmBtn.MouseButton1Click:Connect(function()
     RequestRebirth:FireServer()
 end)
 
-RebirthComplete.OnClientEvent:Connect(function()
-    confirmBtn.Text = "✓ Reborn!"
-    task.delay(1.5, closePanel)
+RebirthComplete.OnClientEvent:Connect(function(result)
+    -- БАГФИКС: раньше success вообще не проверялся — кнопка всегда писала
+    -- "Reborn!" и панель закрывалась, даже если на сервере rebirth провалился
+    -- (не хватило монет / max level), из-за чего казалось что "можно", хотя
+    -- ничего на самом деле не происходило.
+    if result and result.success then
+        confirmBtn.Text = "✓ Reborn!"
+        task.delay(1.5, closePanel)
+    else
+        confirmBtn.Text = "✗ Not enough coins!"
+        playSound("HookMiss")
+        task.spawn(function()
+            local ok, data = pcall(function() return GetPlayerData:InvokeServer() end)
+            if ok and data then populateStats(data) end
+        end)
+        task.delay(1.6, function()
+            if confirmBtn.Active == false and confirmBtn.Text == "✗ Not enough coins!" then
+                confirmBtn.Active = true
+                confirmBtn.Text = "⚡ Rebirth Now!"
+            end
+        end)
+    end
 end)
 
 ShopBridge.Register("RebirthPanel", openPanel)

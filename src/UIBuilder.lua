@@ -694,7 +694,7 @@ do
 	dim.BackgroundTransparency = 0.45; dim.AutoButtonColor = false
 
 	-- Тёмное стекло вместо сплошной синей плашки — в стиле остального UI
-	local panel = frame("Panel", g, UDim2.fromOffset(520,400), UDim2.new(0.5,0,0.5,0), C.Card, 0.06, RADIUS)
+	local panel = frame("Panel", g, UDim2.fromOffset(580,460), UDim2.new(0.5,0,0.5,0), C.Card, 0.06, RADIUS)
 	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, C.CardStroke, 1.5, 0.15)
 
 	local hdr = brightHeader(panel, 50, AC, C.BlueDark)
@@ -703,30 +703,55 @@ do
 	bal.TextXAlignment = Enum.TextXAlignment.Right
 	closeX(panel)
 
-	-- Три слота: Short / Medium / Long. Третий разблокируется геймпассом Extra AFK Slot.
-	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-106), UDim2.fromOffset(8,58), Color3.fromRGB(14,16,22), 0.15, 8)
+	-- Три вертикальные карточки в стиле карточек удочек из магазина (RodGrid)
+	local sc = frame("SlotContainer", panel, UDim2.new(1,-16,1,-118), UDim2.fromOffset(8,58), Color3.fromRGB(14,16,22), 0.15, 8)
 	stroke(sc, C.CardStroke, 1.5, 0.2)
-	local gl = Instance.new("UIGridLayout"); gl.CellSize = UDim2.new(1,-12,0.32,-6)
-	gl.CellPadding = UDim2.fromOffset(0,6); gl.SortOrder = Enum.SortOrder.LayoutOrder
-	local gpad = Instance.new("UIPadding"); gpad.PaddingLeft = UDim.new(0,6); gpad.PaddingTop = UDim.new(0,6)
-	gpad.Parent = sc; gl.Parent = sc
+	local hl = Instance.new("UIListLayout")
+	hl.FillDirection = Enum.FillDirection.Horizontal
+	hl.Padding = UDim.new(0,14)
+	hl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	hl.VerticalAlignment = Enum.VerticalAlignment.Center
+	hl.SortOrder = Enum.SortOrder.LayoutOrder
+	hl.Parent = sc
 
 	local SLOT_INFO = {
-		{ title = "🐠 Short Voyage (1h)",  desc = "2-4 fish · ×1 coins · up to Common" },
-		{ title = "🐟 Medium Voyage (4h)", desc = "4-8 fish · ×3 coins · up to Rare, mutation chance" },
-		{ title = "🐡 Long Voyage (8h) 🔒", desc = "Requires Extra AFK Slot gamepass · 6-12 fish · ×8 coins · up to Epic" },
+		{ icon = "🐠", title = "Short Voyage",  duration = "1 hour",
+		  desc = "A quick dive just offshore. Low risk, modest haul — perfect for a fast top-up between sessions.",
+		  reward = "2-4 fish · ×1 coins · up to Common" },
+		{ icon = "🐟", title = "Medium Voyage", duration = "4 hours",
+		  desc = "Your sub ventures into deeper currents. More fish, better coins, and a real shot at a mutation.",
+		  reward = "4-8 fish · ×3 coins · up to Rare" },
+		{ icon = "🐡", title = "Long Voyage 🔒", duration = "8 hours",
+		  desc = "An extended deep-sea expedition with the richest haul. Requires the Extra AFK Slot gamepass.",
+		  reward = "6-12 fish · ×8 coins · up to Epic" },
 	}
 	for i = 1, 3 do
 		local info = SLOT_INFO[i]
-		local sl = frame("Slot"..i, sc, UDim2.new(), UDim2.new(), C.Card, 0.05, 8)
+		local sl = frame("Slot"..i, sc, UDim2.fromOffset(168, 340), UDim2.new(), C.Card, 0.05, 10)
 		sl.Name = "Slot"..i
+		sl.LayoutOrder = i
 		stroke(sl, C.Blue, 1.5, 0.35)
-		lbl("SlotTitle", sl, info.title, UDim2.new(1,-8,0,20), UDim2.fromOffset(4,4), C.White, true, 13)
-		lbl("SlotDesc", sl, info.desc, UDim2.new(1,-8,0,16), UDim2.fromOffset(4,22), Color3.fromRGB(190,205,225), false, 10)
-		lbl("SlotStatus", sl, "Ready", UDim2.new(1,-8,0,16), UDim2.new(0,4,0,40), Color3.fromRGB(140,200,255), false, 11)
-		local stb = btn("StartBtn", sl, "▶ Send", UDim2.new(0.46,0,0,24), UDim2.new(0,4,1,-28), C.Green, C.White, 12)
+
+		-- Иконка-плейсхолдер сверху (карточка как у удочек) — крупный эмодзи,
+		-- заменяемый позже на реальный рендер субмарины/маршрута
+		local iconHolder = frame("IconHolder", sl, UDim2.new(1,-16,0,72), UDim2.fromOffset(8,10), Color3.fromRGB(22,26,34), 0, 8)
+		local iconLbl = lbl("SlotIcon", iconHolder, info.icon, UDim2.fromScale(1,1), UDim2.new(), C.Text, true)
+		iconLbl.TextScaled = true
+
+		lbl("SlotTitle", sl, info.title, UDim2.new(1,-16,0,18), UDim2.fromOffset(8,86), C.White, true, 14)
+		lbl("SlotDuration", sl, "⏱ "..info.duration, UDim2.new(1,-16,0,14), UDim2.fromOffset(8,104), Color3.fromRGB(140,200,255), false, 11)
+
+		-- Описание того, что делает экспедиция — флейвор-текст, не только цифры
+		local descLbl = lbl("SlotDesc", sl, info.desc, UDim2.new(1,-16,0,80), UDim2.fromOffset(8,120), Color3.fromRGB(190,205,225), false, 10)
+		descLbl.TextWrapped = true; descLbl.TextYAlignment = Enum.TextYAlignment.Top; descLbl.TextScaled = false
+
+		lbl("SlotReward", sl, info.reward, UDim2.new(1,-16,0,28), UDim2.fromOffset(8,202), Color3.fromRGB(255,210,90), false, 10).TextWrapped = true
+
+		lbl("SlotStatus", sl, "Ready", UDim2.new(1,-16,0,16), UDim2.fromOffset(8,234), Color3.fromRGB(140,200,255), false, 11)
+
+		local stb = btn("StartBtn", sl, "▶ Send", UDim2.new(1,-16,0,30), UDim2.new(0,8,1,-40), C.Green, C.White, 13)
 		corner(stb, BRAD); stroke(stb, C.GreenDark, 1, 0)
-		local ctb = btn("CollectBtn", sl, "⬇ Collect", UDim2.new(0.46,0,0,24), UDim2.new(0.54,0,1,-28), C.Orange, C.White, 12)
+		local ctb = btn("CollectBtn", sl, "⬇ Collect", UDim2.new(1,-16,0,30), UDim2.new(0,8,1,-40), C.Orange, C.White, 13)
 		corner(ctb, BRAD); ctb.Visible = false
 		-- Подсветка активной экспедиции (цвет/фон меняется скриптом при старте)
 		local glow = stroke(sl, Color3.fromRGB(255,210,90), 3, 1); glow.Name = "ActiveGlow"

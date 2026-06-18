@@ -151,9 +151,16 @@ ExpeditionStarted.OnClientEvent:Connect(function(data)
     refreshUI(data)
 end)
 
-ExpeditionComplete.OnClientEvent:Connect(function(data)
-    refreshUI(data)
+ExpeditionComplete.OnClientEvent:Connect(function(rewards)
+    -- БАГФИКС: сервер шлёт сюда {coins, fish} (награды), а не массив экспедиций —
+    -- передавать это напрямую в refreshUI ломало состояние всех слотов
+    -- (индексация по несуществующим полям), из-за чего казалось что слот
+    -- "доступен", хотя реально ничего не обновлялось. Запрашиваем актуальный статус.
     playSound("Purchase")
+    task.spawn(function()
+        local ok, data = pcall(function() return GetExpeditionStatus:InvokeServer() end)
+        if ok and data then refreshUI(data) end
+    end)
 end)
 
 local function openPanel()
