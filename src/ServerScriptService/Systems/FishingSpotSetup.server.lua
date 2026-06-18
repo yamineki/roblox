@@ -145,12 +145,13 @@ end
 local allFish = {}  -- { model, primary, prompt, zoneData, target, ... }
 
 -- Случайная позиция внутри зоны Part
+local FISH_HEIGHT_OFFSET = 3  -- немного поднимаем рыб от дна, чтобы анимация плавания смотрелась лучше
 local function randomPosInZone(z)
     local half = z.size / 2
     local margin = 8  -- отступ от краёв
     return Vector3.new(
         z.pos.X + rng:NextNumber(-half.X + margin, half.X - margin),
-        z.pos.Y + rng:NextNumber(-half.Y * 0.4, half.Y * 0.4),
+        z.pos.Y + rng:NextNumber(-half.Y * 0.4, half.Y * 0.4) + FISH_HEIGHT_OFFSET,
         z.pos.Z + rng:NextNumber(-half.Z + margin, half.Z - margin)
     )
 end
