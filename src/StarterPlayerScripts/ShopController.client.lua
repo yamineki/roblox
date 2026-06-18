@@ -29,6 +29,7 @@ local BuyRod      = Remotes:WaitForChild("BuyRod")
 local GetRods     = Remotes:WaitForChild("GetRods")
 local RodPurchased= Remotes:WaitForChild("RodPurchased")
 local RodEquipped = Remotes:WaitForChild("RodEquipped")
+local EquipRod    = Remotes:WaitForChild("EquipRod")
 
 -- Данные игрока (кэш на клиенте)
 local ownedRods   = {}
@@ -77,9 +78,11 @@ local function rebuildRodGrid()
         local rod = RodData:GetRod(rodId)
         if not rod then continue end
 
+        local isEquipped = (rodId == equippedRod)
+
         local card = Instance.new("Frame")
         card.Name = rodId
-        card.Size = UDim2.fromOffset(160, 220)
+        card.Size = isEquipped and UDim2.fromOffset(176, 236) or UDim2.fromOffset(160, 220)
         card.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
         card.BackgroundTransparency = 0.08
         card.BorderSizePixel = 0
@@ -89,33 +92,54 @@ local function rebuildRodGrid()
         cardCorner.CornerRadius = UDim.new(0, 8)
         cardCorner.Parent = card
 
-        -- RodData не содержит поля rarity для удочек (v1) — обводка по умолчанию teal
+        -- RodData не содержит поля rarity для удочек (v1) — обводка по умолчанию teal,
+        -- надетая удочка светится золотом независимо от редкости
         local cardStroke = Instance.new("UIStroke")
-        cardStroke.Color = RARITY_COLOR[rod.rarity] or Color3.fromRGB(80, 200, 190)
-        cardStroke.Thickness = 1.5
+        cardStroke.Color = isEquipped and Color3.fromRGB(255, 200, 60) or (RARITY_COLOR[rod.rarity] or Color3.fromRGB(80, 200, 190))
+        cardStroke.Thickness = isEquipped and 2.5 or 1.5
         cardStroke.Parent = card
+
+        -- Картинка удочки — основной визуал карточки (заменить позже на реальные рендеры)
+        local iconHolder = Instance.new("Frame")
+        iconHolder.Name = "IconHolder"
+        iconHolder.Size = UDim2.new(1, -16, 0.55, 0)
+        iconHolder.Position = UDim2.fromOffset(8, 8)
+        iconHolder.BackgroundColor3 = Color3.fromRGB(34, 38, 46)
+        iconHolder.BorderSizePixel = 0
+        iconHolder.Parent = card
+        local ihCorner = Instance.new("UICorner"); ihCorner.CornerRadius = UDim.new(0, 6); ihCorner.Parent = iconHolder
+
+        local rodIcon = Instance.new("ImageLabel")
+        rodIcon.Name = "RodIcon"
+        rodIcon.Size = UDim2.fromScale(0.82, 0.82)
+        rodIcon.Position = UDim2.fromScale(0.5, 0.5)
+        rodIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+        rodIcon.BackgroundTransparency = 1
+        rodIcon.ScaleType = Enum.ScaleType.Fit
+        rodIcon.Image = rod.icon ~= "" and rod.icon or ""
+        rodIcon.Parent = iconHolder
+
+        if rod.icon == "" then
+            local placeholder = Instance.new("TextLabel")
+            placeholder.BackgroundTransparency = 1
+            placeholder.Size = UDim2.fromScale(1, 1)
+            placeholder.Text = "🎣"
+            placeholder.TextScaled = true
+            placeholder.Font = Enum.Font.GothamBold
+            placeholder.TextColor3 = Color3.fromRGB(80, 88, 100)
+            placeholder.Parent = iconHolder
+        end
 
         local nameLabel = Instance.new("TextLabel")
         nameLabel.Name = "RodName"
         nameLabel.Text = rod.displayName
-        nameLabel.Size = UDim2.new(1, 0, 0.25, 0)
+        nameLabel.Size = UDim2.new(1, -8, 0, 20)
+        nameLabel.Position = UDim2.new(0, 4, 0.58, 4)
         nameLabel.BackgroundTransparency = 1
         nameLabel.TextColor3 = Color3.fromRGB(235, 238, 245)
         nameLabel.Font = Enum.Font.GothamBold
         nameLabel.TextScaled = true
         nameLabel.Parent = card
-
-        local bonusLabel = Instance.new("TextLabel")
-        bonusLabel.Name = "RodBonus"
-        bonusLabel.Text = rod.description or ""
-        bonusLabel.Size = UDim2.new(1, -8, 0.35, 0)
-        bonusLabel.Position = UDim2.new(0, 4, 0.25, 0)
-        bonusLabel.BackgroundTransparency = 1
-        bonusLabel.TextColor3 = Color3.fromRGB(150, 158, 175)
-        bonusLabel.Font = Enum.Font.Gotham
-        bonusLabel.TextScaled = true
-        bonusLabel.TextWrapped = true
-        bonusLabel.Parent = card
 
         card.MouseEnter:Connect(function() showRodPreview(rod) end)
 
@@ -123,12 +147,12 @@ local function rebuildRodGrid()
         for _, owned in ipairs(ownedRods) do
             if owned == rodId then isOwned = true; break end
         end
-        if rodId == equippedRod then showRodPreview(rod) end
+        if isEquipped then showRodPreview(rod) end
 
         local actionButton = Instance.new("TextButton")
         actionButton.Name = "ActionButton"
-        actionButton.Size = UDim2.new(0.8, 0, 0.28, 0)
-        actionButton.Position = UDim2.new(0.1, 0, 0.68, 0)
+        actionButton.Size = UDim2.new(0.84, 0, 0.16, 0)
+        actionButton.Position = UDim2.new(0.08, 0, 0.8, 0)
         actionButton.Font = Enum.Font.GothamBold
         actionButton.TextScaled = true
         actionButton.BorderSizePixel = 0
@@ -138,10 +162,18 @@ local function rebuildRodGrid()
         abCorner.CornerRadius = UDim.new(0, 8)
         abCorner.Parent = actionButton
 
-        if isOwned then
-            actionButton.Text = "✓ Owned"
-            actionButton.BackgroundColor3 = Color3.fromRGB(50, 175, 100)
+        if isEquipped then
+            actionButton.Text = "✓ Equipped"
+            actionButton.BackgroundColor3 = Color3.fromRGB(180, 140, 30)
             actionButton.Active = false
+        elseif isOwned then
+            -- Только одна удочка может быть надета — клик всегда заменяет текущую
+            actionButton.Text = "Equip"
+            actionButton.BackgroundColor3 = Color3.fromRGB(50, 175, 100)
+            actionButton.MouseButton1Click:Connect(function()
+                SoundFX.Play("Click")
+                EquipRod:FireServer(rodId)
+            end)
         else
             local canAfford = (playerCoins >= rod.price)
             actionButton.Text = (canAfford and "🪙 " or "🔒 ") .. tostring(rod.price)

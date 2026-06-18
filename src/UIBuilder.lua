@@ -151,8 +151,8 @@ end
 do
 	local g = scrGui("FishingGui", 130)
 
-	-- Hook Phase — горизонтальный слайдер
-	local hp = frame("HookPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 0.5)
+	-- Hook Phase — горизонтальный слайдер (без затемнения фона — видна вода/мир)
+	local hp = frame("HookPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 1)
 	hp.Visible = false
 	local sliderBG = frame("SliderBG", hp, UDim2.fromOffset(520,58), UDim2.new(0.5,-260,0.5,-29), C.PanelDark, 0, 8)
 	stroke(sliderBG, C.Stroke, 1.5, 0)
@@ -166,8 +166,10 @@ do
 	local zoneLabel = lbl("ZoneLabel", hp, "🎣  CAST!", UDim2.fromOffset(340,54), UDim2.new(0.5,-170,0.5,-110), C.White, true)
 	zoneLabel.TextStrokeTransparency = 0.5
 
-	-- Catch Phase
-	local cp = frame("CatchPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 0.5)
+	-- Catch Phase (без затемнения фона; все элементы выровнены вокруг
+	-- вертикального центра экрана отступами в офсетах, чтобы ничего не наезжало
+	-- друг на друга независимо от разрешения экрана)
+	local cp = frame("CatchPhase", g, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 1)
 	cp.Visible = false
 	local sf = frame("ScaleFrame", cp, UDim2.fromOffset(60,400), UDim2.new(0.5,-30,0.5,-200), C.PanelDark, 0, 8)
 	stroke(sf, C.Stroke, 1.5, 0)
@@ -184,14 +186,19 @@ do
 	local fillGrad = Instance.new("UIGradient")
 	fillGrad.Color = ColorSequence.new(C.GreenZone, Color3.fromRGB(160,255,180))
 	fillGrad.Rotation = 90; fillGrad.Parent = fill
-	local sl = lbl("StressLabel", cp, "⚠ Fish is angry!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.15,0), C.Coral, true)
-	sl.Visible = false
-	local pl = lbl("PerfectLabel", cp, "PERFECT CATCH!", UDim2.fromOffset(300,40), UDim2.new(0.5,-150,0.08,0), Color3.fromRGB(120,230,140), true)
+
+	-- Статусные подсказки — стопкой НАД игровым полем, не наезжают на бар
+	local pl = lbl("PerfectLabel", cp, "PERFECT CATCH!", UDim2.fromOffset(300,32), UDim2.new(0.5,-150,0.5,-300), Color3.fromRGB(120,230,140), true)
 	pl.Visible = false
-	lbl("BehaviorLabel", cp, "Lazy", UDim2.fromOffset(200,30), UDim2.new(0.5,-100,0.22,0), Color3.fromRGB(160,165,175), false)
-	local el = lbl("EscapeLabel", cp, "Fish got away...", UDim2.fromOffset(400,50), UDim2.new(0.5,-200,0.45,0), C.Coral, true)
+	local sl = lbl("StressLabel", cp, "⚠ Fish is angry!", UDim2.fromOffset(300,32), UDim2.new(0.5,-150,0.5,-258), C.Coral, true)
+	sl.Visible = false
+
+	-- Behavior/Variant — стопкой ПОД игровым полем
+	lbl("BehaviorLabel", cp, "Lazy", UDim2.fromOffset(200,24), UDim2.new(0.5,-100,0.5,212), Color3.fromRGB(160,165,175), false)
+	lbl("VariantLabel", cp, "", UDim2.fromOffset(300,24), UDim2.new(0.5,-150,0.5,240), Color3.fromRGB(200,210,230), false, 13)
+
+	local el = lbl("EscapeLabel", cp, "Fish got away...", UDim2.fromOffset(400,50), UDim2.new(0.5,-200,0.5,-25), C.Coral, true)
 	el.Visible = false
-	lbl("VariantLabel", cp, "", UDim2.fromOffset(260,26), UDim2.new(0.5,-130,0.30,0), Color3.fromRGB(200,210,230), false, 13)
 
 	local effectsLayer = frame("EffectsLayer", cp, UDim2.fromScale(1,1), UDim2.new(0,0,0,0), Color3.new(0,0,0), 1)
 	effectsLayer.ClipsDescendants = false; effectsLayer.ZIndex = 50
@@ -200,11 +207,13 @@ do
 	-- (Rhythm: индикатор колеблется непрерывно, тапай в такт.
 	--  SkillCheck (Dead by Daylight-style): виджет невидим до случайного "Check!",
 	--  затем индикатор быстро проходит бар один раз — тапни в зоне.)
-	local tcw = frame("TapCheckWidget", cp, UDim2.fromOffset(480,86), UDim2.new(0.5,-240,0.60,0), C.PanelDark, 0, 8)
+	-- Выровнен по правому краю с ScaleFrame (а не по центру экрана), чтобы не
+	-- наезжать на всегда видимый ProgressBar справа от игрового поля
+	local tcw = frame("TapCheckWidget", cp, UDim2.fromOffset(360,86), UDim2.new(0.5,-330,0.5,-43), C.PanelDark, 0, 8)
 	tcw.Visible = false
 	stroke(tcw, C.Stroke, 1.5, 0)
-	local tapHint = lbl("TapHint", tcw, "Tap to the rhythm!", UDim2.fromOffset(440,20), UDim2.fromOffset(20,4), C.White, true, 13)
-	local tapBar = frame("TapBar", tcw, UDim2.fromOffset(440,40), UDim2.fromOffset(20,30), C.PanelBG, 0, 6)
+	local tapHint = lbl("TapHint", tcw, "Tap to the rhythm!", UDim2.fromOffset(320,20), UDim2.fromOffset(20,4), C.White, true, 13)
+	local tapBar = frame("TapBar", tcw, UDim2.fromOffset(320,40), UDim2.fromOffset(20,30), C.PanelBG, 0, 6)
 	frame("TapGreenZone", tapBar, UDim2.fromOffset(90,40), UDim2.new(0.5,-45,0,0), C.GreenZone, 0.35, 6)
 	frame("TapPerfectZone", tapBar, UDim2.fromOffset(36,40), UDim2.new(0.5,-18,0,0), Color3.fromRGB(120,230,140), 0.1, 6)
 	local tapInd = frame("TapIndicator", tapBar, UDim2.fromOffset(8,40), UDim2.new(0,0,0,0), C.White, 0, 4)
@@ -581,9 +590,9 @@ do
 	local dim = btn("Dim", g, "", UDim2.fromScale(1,1), UDim2.new(), Color3.new(0,0,0))
 	dim.BackgroundTransparency = 0.45; dim.AutoButtonColor = false
 
-	-- Вертикальная панель у правого края экрана, тёмное стекло
-	local panel = frame("Panel", g, UDim2.fromOffset(320,420), UDim2.new(1,-32,0.5,0), C.Card, 0.08, 12)
-	panel.AnchorPoint = Vector2.new(1,0.5); stroke(panel, C.CardStroke, 1.5, 0.2)
+	-- Вертикальная панель по центру экрана, тёмное стекло
+	local panel = frame("Panel", g, UDim2.fromOffset(320,420), UDim2.new(0.5,0,0.5,0), C.Card, 0.08, 12)
+	panel.AnchorPoint = Vector2.new(0.5,0.5); stroke(panel, C.CardStroke, 1.5, 0.2)
 
 	-- Portrait (вверху, по центру)
 	local portrait = frame("Portrait", panel, UDim2.fromOffset(120,120), UDim2.new(0.5,-60,0,16), C.Card, 0.08, 8)

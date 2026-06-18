@@ -58,6 +58,7 @@ local rodShakeTween    = nil
 local fishInZonePrev   = false
 local lastRippleTime   = 0
 local zoneTintTween    = nil
+local pulseTweens      = {}  -- зацикленные "дыхание"-твины зон, очищаются между поклёвками
 
 -- ══ ВАРИАНТЫ CATCH PHASE ══
 -- Каждая поклёвка случайно выбирает один из вариантов мини-игры вытягивания —
@@ -348,6 +349,34 @@ function startCatchPhase()
 
     setGuiVisible("HookPhase", false)
     setGuiVisible("CatchPhase", true)
+
+    -- "Дыхание" зон — лёгкая зацикленная пульсация прозрачности, чтобы поле
+    -- ловли не выглядело статичным даже когда игрок ничего не нажимает
+    for _, t in ipairs(pulseTweens) do t:Cancel() end
+    pulseTweens = {}
+    if catchGui then
+        local targets = {}
+        local sf2 = catchGui:FindFirstChild("ScaleFrame")
+        if sf2 then
+            local gz = sf2:FindFirstChild("GreenZone")
+            if gz then table.insert(targets, { gz, gz.BackgroundTransparency }) end
+        end
+        local tcw2 = catchGui:FindFirstChild("TapCheckWidget")
+        local tapBar2 = tcw2 and tcw2:FindFirstChild("TapBar")
+        local tpz = tapBar2 and tapBar2:FindFirstChild("TapPerfectZone")
+        if tpz then table.insert(targets, { tpz, tpz.BackgroundTransparency }) end
+
+        for _, pair in ipairs(targets) do
+            local inst, baseTransparency = pair[1], pair[2]
+            local tw = TweenService:Create(
+                inst,
+                TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+                { BackgroundTransparency = math.clamp(baseTransparency + 0.25, 0, 1) }
+            )
+            tw:Play()
+            table.insert(pulseTweens, tw)
+        end
+    end
 
     playSound("Splash")
 end
@@ -705,9 +734,13 @@ end
 -- ══ ЗАВЕРШЕНИЕ ПОИМКИ ══
 finishCatch = function(success)
     currentPhase = "result"
-    setGuiVisible("CatchPhase", false)
+
+    for _, t in ipairs(pulseTweens) do t:Cancel() end
+    pulseTweens = {}
 
     if success then
+        -- CatchPhase скрывается сразу — её сменяет ResultPhase
+        setGuiVisible("CatchPhase", false)
         -- Отправить результат на сервер
         CatchResultEvent:FireServer({
             zone          = currentZone,

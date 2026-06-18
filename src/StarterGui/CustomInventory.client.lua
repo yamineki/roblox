@@ -21,7 +21,8 @@ local Backpack  = Player:WaitForChild("Backpack")
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Strings = require(ReplicatedStorage.Modules.Strings)
 local RodData = require(ReplicatedStorage.Modules.RodData)
-local EquipRod = Remotes:WaitForChild("EquipRod")
+local EquipRod     = Remotes:WaitForChild("EquipRod")
+local RodEquipped  = Remotes:WaitForChild("RodEquipped")
 
 -- ══ КОНСТАНТЫ (должны совпадать с UIBuilder.lua) ══
 local SLOT_SIZE        = 60
@@ -164,7 +165,7 @@ local function isToolEquipped(toolName)
     return char:FindFirstChild(toolName) ~= nil
 end
 
-local function equipTool(toolName)
+local function moveToolToHand(toolName)
     local hum = getHumanoid()
     if not hum then return end
     hum:UnequipTools()
@@ -172,6 +173,10 @@ local function equipTool(toolName)
         local tool = Backpack:FindFirstChild(toolName)
         if tool then hum:EquipTool(tool) end
     end)
+end
+
+local function equipTool(toolName)
+    moveToolToHand(toolName)
     if RodData:GetRod(toolName) then
         EquipRod:FireServer(toolName)
     end
@@ -334,6 +339,15 @@ local function rebuildHotbar()
         -- DetailPanel/Grid пересобираются по требованию, см. refreshFishGrid
     end
 end
+
+-- Удочку могли надеть из другого места (например, кнопка "Equip" в магазине) —
+-- подхватываем подтверждение сервера и физически перекладываем Tool в руку
+RodEquipped.OnClientEvent:Connect(function(rodId)
+    if not isToolEquipped(rodId) then
+        moveToolToHand(rodId)
+    end
+    task.delay(0.05, rebuildHotbar)
+end)
 
 -- ══ ВЫБОР / АКТИВАЦИЯ СЛОТА (по клику или клавише 1-8) ══
 local function activateSlot(i)
