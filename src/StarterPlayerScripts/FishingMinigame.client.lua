@@ -224,7 +224,10 @@ end
 -- ══ ФАЗА 2: CATCHING ══
 function startCatchPhase()
     currentPhase   = "catching"
-    catchProgress  = 0
+    -- Старт с середины шкалы, а не с MinProgress — иначе первая же доля секунды
+    -- "рыба вне зоны" (пока игрок не успел зажать кнопку) сразу триггерит проигрыш,
+    -- потому что catchProgress <= MinProgress было true с самого первого кадра.
+    catchProgress  = (GameConfig.Fishing.MaxProgress + GameConfig.Fishing.MinProgress) / 2
     isPerfectCatch = true
     fishPos        = 200
     fishVelocity   = 0
